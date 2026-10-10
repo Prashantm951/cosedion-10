@@ -36,6 +36,11 @@ flowchart LR
   H --> H3[Logo / branding similarity]
   H --> H4[Scam-language signals]
   H --> H5[Account or publisher signals]
+  H --> H6[App impersonation analysis]
+  H6 --> H6A[Similar app title and package ID]
+  H6 --> H6B[Icon / logo impersonation]
+  H6 --> H6C[Publisher mismatch]
+  H6 --> H6D[Description and branding resemblance]
   H --> I[Explainable risk score]
   I --> J[Threat findings]
   J --> K[Analyst queue and report]
@@ -96,12 +101,12 @@ risk = round(
 
 Severity:
 
-| Score | Severity |
-| ---: | --- |
+|  Score | Severity |
+| -----: | -------- |
 | 80–100 | Critical |
-| 60–79 | High |
-| 40–59 | Medium |
-| 0–39 | Low |
+|  60–79 | High     |
+|  40–59 | Medium   |
+|   0–39 | Low      |
 
 ### Identity / look-alike score — 30%
 
@@ -133,6 +138,17 @@ Social indicators: new account, unverified status, very low followers, suspiciou
 
 App indicators: unapproved developer, package ID mismatch, and high-risk permissions such as SMS, accessibility service, overlay, contacts, call logs, and install packages.
 
+### Suspicious application analysis
+
+For every non-official mobile-app candidate, evaluate these distinct, explainable signals before creating a finding:
+
+1. **Similar app names:** compare normalized app title and package ID against the official app names, aliases, and bundle/package IDs.
+2. **Brand/logo impersonation:** record a deterministic simulated icon/logo-similarity value in this MVP; label it simulated so it can later be replaced by image hashing or embeddings.
+3. **Different developers or publishers:** treat a publisher outside the approved registry as structural risk, especially where the app title closely matches the brand.
+4. **Description or branding resemblance:** compare app descriptions for copied brand/product terms and scan them for KYC, refund, OTP, payment, urgency, and support-diversion lures.
+
+An app with only a similar name remains a review candidate; a high-confidence app finding combines title/package similarity with at least one additional signal such as icon similarity, unapproved publisher, risky permission, or deceptive description.
+
 ### Decision principle
 
 Name similarity is never sufficient by itself to label a candidate fraudulent. High-priority findings should combine multiple signals; ambiguous records remain analyst-review findings.
@@ -142,7 +158,7 @@ Name similarity is never sufficient by itself to label a candidate fraudulent. H
 The current codebase already has a UI-driven scan simulator and rule-based scoring:
 
 - `src/components/sx/ScanOverlay.tsx` runs the animated scan, creates a `scans` record, inserts discovered threats, and updates scan totals.
-- `src/lib/demo-data.ts` defines `SCAN_POOL` and returns random selections through `scanDiscoveries`.
+- `src/lib/monitoring.ts` derives simulated social and app candidates from the active brand and evaluates official matches, look-alikes, app-title/package similarity, publisher mismatch, icon similarity, permissions, and descriptions.
 - `src/lib/scoring.ts` contains homoglyph normalization, Levenshtein similarity, suspicious-keyword flags, scam regexes, account signal scoring, weighted final score, and severity bands.
 - `src/lib/ai.functions.ts` supports optional on-demand LLM re-analysis from a threat detail page.
 - `drizzle/migrations/0000_migration.sql` defines the existing Supabase/PostgreSQL tables and RLS policies.
@@ -164,13 +180,13 @@ All existing tables use Supabase row-level security and are scoped to the authen
 
 Keep audit-worthy data. Do not delete the entire scan after report generation.
 
-| Entity | Retention |
-| --- | --- |
-| Brand and official assets | Keep |
-| Scan history | Keep |
-| Exclusions and reasons | Keep or retain for audit |
-| Threat/app findings | Keep |
-| Reports and analyst notes | Keep |
+| Entity                          | Retention                                    |
+| ------------------------------- | -------------------------------------------- |
+| Brand and official assets       | Keep                                         |
+| Scan history                    | Keep                                         |
+| Exclusions and reasons          | Keep or retain for audit                     |
+| Threat/app findings             | Keep                                         |
+| Reports and analyst notes       | Keep                                         |
 | Raw/staged simulated candidates | Temporary; delete after configured retention |
 
 Add `scan_candidates` for raw candidate staging and `scan_exclusions` for excluded official matches/reasons if the implementation needs explicit auditing. At scan completion, persist scan metadata, exclusions, findings, and reports; mark staged data processed; then clean only temporary candidate rows.
@@ -181,7 +197,7 @@ Add `scan_candidates` for raw candidate staging and `scan_exclusions` for exclud
 - Documented that the present scan is a demo simulation rather than live social/app-store monitoring.
 - Defined a brand-driven simulated candidate strategy for the prototype.
 - Defined official-asset exclusion rules and an explainable weighted score.
-- Created GitHub issue [#1: Build an explainable Social & App Monitoring scan pipeline](https://github.com/abhinavsinghal-18/cosedion-10/issues/1) with architecture, algorithm, lifecycle, acceptance criteria, and demo script.
+- Implemented the brand-driven simulated monitoring pipeline and documented its architecture, algorithm, lifecycle, and acceptance criteria in GitHub issue #3.
 
 ## Unresolved issues / risks
 
