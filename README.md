@@ -195,3 +195,134 @@ Available signals contribute to a risk score between 0 and 100. The system shoul
 Candidates are grouped into categories such as legitimate / official, potential impersonation, and likely scam. Reports summarize the findings for human review.
 
 > **Implementation status:** This diagram represents the intended system architecture. Some current workflows use simulated candidate data, and automated live discovery, comprehensive verification, image-based logo comparison, and AI-assisted analysis require implementation and validation. The architecture should be updated as these capabilities become operational.
+
+---
+
+## 7. Risk Scoring
+
+Threat Lens assigns a risk score between 0 and 100 using available signals. The score helps users understand how suspicious a candidate account or application may be.
+
+The scoring system considers:
+
+- **Identity and handle similarity:** Similarities to official names and account identifiers.
+- **Logo similarity:** Potential visual similarities to official branding.
+- **Scam-pattern detection:** Suspicious phrases, misleading claims, and requests.
+- **Account and application signals:** Available metadata, publisher information, package identifiers, and permissions.
+
+Higher scores indicate greater potential risk. Scores should be treated as indicators for further investigation, not proof of fraud.
+
+## 8. Technology Stack
+
+Threat Lens uses the following technologies in its project:
+
+- **React and TypeScript:** Building the user interface and application logic.
+- **Vite:** Development server and build tooling.
+- **TanStack Start:** Application framework.
+- **Tailwind CSS:** Styling and responsive layouts.
+- **Supabase:** Backend and data-related services.
+- **Vitest:** Testing application code.
+
+The exact functionality available depends on the current implementation and configuration.
+
+## 9. Getting Started
+
+### Prerequisites
+
+Install the following before running the project:
+
+- [Node.js](https://nodejs.org/)
+- [Git](https://git-scm.com/)
+- A code editor such as [Visual Studio Code](https://code.visualstudio.com/)
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/Prashantm951/cosedion-10.git
+   ```
+
+2. Enter the project directory:
+
+   ```bash
+   cd cosedion-10
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open the local URL displayed in your terminal.
+
+Some features may require environment variables or backend configuration. Check the project's configuration before enabling those features.
+
+## 10. Project Structure
+
+The main project files and directories include:
+
+- `public/` - Static assets.
+- `src/` - Application source code and components.
+- `.env` - Local environment variables, if required.
+- `package.json` - Project dependencies and available scripts.
+- `README.md` - Project documentation.
+- `vite.config.ts` - Vite configuration.
+- `tsconfig.json` - TypeScript configuration.
+- `vitest.config.ts` - Vitest configuration.
+
+Additional files and directories support formatting, linting, development, and application configuration.
+
+## 11. Limitations
+
+Threat Lens is under development. Its current limitations include:
+
+- Some candidate account data may be simulated rather than collected from live platforms.
+- Live discovery and comprehensive verification are not yet fully implemented.
+- Logo comparison may require additional implementation and validation.
+- AI-assisted analysis should not be considered operational unless explicitly integrated and tested.
+- Risk scores can produce false positives and false negatives.
+- A high score does not prove that an account or application is fraudulent.
+
+Always verify suspicious accounts and applications through trusted official sources before taking action.
+
+## 12. Roadmap
+
+Potential future improvements include:
+
+- Implementing reliable live candidate discovery.
+- Improving identity and impersonation detection.
+- Integrating validated logo comparison.
+- Adding explainable evidence for individual risk scores.
+- Expanding automated tests and validation.
+- Improving reporting and investigation workflows.
+- Evaluating detection accuracy using representative test data.
+
+Roadmap items are goals, not claims that these features are already available.
+
+## 13. Contributing
+
+Contributions are welcome.
+
+1. Fork the repository.
+2. Create a branch for your changes.
+3. Make your changes and test them.
+4. Commit your work with a clear message.
+5. Open a pull request describing the changes.
+
+Please avoid committing secrets, API keys, access tokens, or personal data. Keep documentation aligned with the actual implementation.
+
+## 14. Disclaimer
+
+Threat Lens is intended to assist with identifying potentially suspicious accounts and applications. It does not guarantee the detection of every scam or impersonation attempt.
+
+Risk scores and alerts are informational and should support, nthreat-lens-murex.vercel.appot replace, independent verification and sound judgment. Do not use the tool as the sole basis for financial, legal, or security-critical decisions.
+
+The project is provided for educational and defensive purposes. Users are responsible for complying with applicable laws, platform policies, and privacy requirements.
+**Live Demo:** [Threat Lens](https://threat-lens-murex.vercel.app/)
