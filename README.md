@@ -1,29 +1,29 @@
-# 🛡️ ThreatLens
+# 🛡️ Threat Lens
 
 ### AI-Assisted Digital Risk Protection
+
+🚀 **Live Demo:** [Threat Lens](https://threat-lens-murex.vercel.app/)
 
 Threat Lens is a digital risk protection platform designed to help identify potential brand impersonation, suspicious online identities, scam-related content, and potentially malicious applications.
 
 The project aims to help organizations protect their digital identities through brand identity analysis, suspicious-content detection, and explainable risk scoring.
 
-> **Project status:** Prototype in active development. Some detection workflows use simulated data. Live social media discovery and production-grade AI analysis are planned improvements.
-
----
+> **Project Status:** Prototype in active development. Some detection workflows use simulated data. Live social media discovery and production-grade AI analysis are planned improvements.
 
 ## 📌 Table of Contents
 
 - [The Problem](#-the-problem)
 - [Our Solution](#-our-solution)
 - [Features](#-features)
-- [How It Works](#-how-it-works)
+- [How It Works](#️-how-it-works)
 - [Risk Scoring](#-risk-scoring)
-- [Technology Stack](#-technology-stack)
+- [Technology Stack](#️-technology-stack)
 - [Getting Started](#-getting-started)
 - [Project Structure](#-project-structure)
-- [Limitations](#-limitations)
+- [Limitations](#️-limitations)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
-- [Disclaimer](#-disclaimer)
+- [Disclaimer](#️-disclaimer)
 
 ---
 
@@ -43,11 +43,9 @@ Investigating these threats manually can be time-consuming.
 
 ## 💡 Our Solution
 
-ThreatLens aims to provide a centralized workspace for registering brand identities, analyzing suspicious candidates, assigning explainable risk scores, and managing investigations.
+Threat Lens aims to provide a centralized workspace for registering brand identities, analyzing suspicious candidates, assigning explainable risk scores, and managing investigations.
 
 The long-term goal is to combine identity analysis, image comparison, authorized data collection, and AI-assisted investigation in one platform.
-
----
 
 ## ✨ Features
 
@@ -106,11 +104,9 @@ The interface supports reviewing candidate records, inspecting risk indicators, 
 
 The application includes investigation and reporting workflows, with persistence depending on the configured storage integration.
 
----
-
 ## ⚙️ How It Works
 
-## 🏗️ System Architecture
+### 🏗️ System Architecture
 
 The following architecture illustrates the intended Threat Lens workflow, from establishing an official brand baseline to analyzing potential impersonators and generating categorized investigation reports.
 
@@ -194,11 +190,9 @@ Available signals contribute to a risk score between 0 and 100. The system shoul
 
 Candidates are grouped into categories such as legitimate / official, potential impersonation, and likely scam. Reports summarize the findings for human review.
 
-> **Implementation status:** This diagram represents the intended system architecture. Some current workflows use simulated candidate data, and automated live discovery, comprehensive verification, image-based logo comparison, and AI-assisted analysis require implementation and validation. The architecture should be updated as these capabilities become operational.
+> **Implementation Status:** This diagram represents the intended system architecture. Some current workflows use simulated candidate data, and automated live discovery, comprehensive verification, image-based logo comparison, and AI-assisted analysis require implementation and validation. The architecture should be updated as these capabilities become operational.
 
----
-
-## 7. Risk Scoring
+## 📊 Risk Scoring
 
 Threat Lens assigns a risk score between 0 and 100 using available signals. The score helps users understand how suspicious a candidate account or application may be.
 
@@ -211,20 +205,22 @@ The scoring system considers:
 
 Higher scores indicate greater potential risk. Scores should be treated as indicators for further investigation, not proof of fraud.
 
-## 8. Technology Stack
+## 🛠️ Technology Stack
 
 Threat Lens uses the following technologies in its project:
 
-- **React and TypeScript:** Building the user interface and application logic.
-- **Vite:** Development server and build tooling.
-- **TanStack Start:** Application framework.
-- **Tailwind CSS:** Styling and responsive layouts.
-- **Supabase:** Backend and data-related services.
-- **Vitest:** Testing application code.
+| Technology | Purpose |
+|---|---|
+| React and TypeScript | Building the user interface and application logic |
+| Vite | Development server and build tooling |
+| TanStack Start | Application framework |
+| Tailwind CSS | Styling and responsive layouts |
+| Supabase | Backend and data-related services |
+| Vitest | Testing application code |
 
 The exact functionality available depends on the current implementation and configuration.
 
-## 9. Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -236,50 +232,54 @@ Install the following before running the project:
 
 ### Installation
 
-1. Clone the repository:
+**1. Clone the repository**
 
-   ```bash
-   git clone https://github.com/Prashantm951/cosedion-10.git
-   ```
+```bash
+git clone https://github.com/Prashantm951/cosedion-10.git
+```
 
-2. Enter the project directory:
+**2. Enter the project directory**
 
-   ```bash
-   cd cosedion-10
-   ```
+```bash
+cd cosedion-10
+```
 
-3. Install dependencies:
+**3. Install dependencies**
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-4. Start the development server:
+**4. Start the development server**
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
-5. Open the local URL displayed in your terminal.
+Open the local URL displayed in your terminal.
 
 Some features may require environment variables or backend configuration. Check the project's configuration before enabling those features.
 
-## 10. Project Structure
+## 📁 Project Structure
 
 The main project files and directories include:
 
-- `public/` - Static assets.
-- `src/` - Application source code and components.
-- `.env` - Local environment variables, if required.
-- `package.json` - Project dependencies and available scripts.
-- `README.md` - Project documentation.
-- `vite.config.ts` - Vite configuration.
-- `tsconfig.json` - TypeScript configuration.
-- `vitest.config.ts` - Vitest configuration.
+```text
+cosedion-10/
+├── public/             # Static assets
+├── src/                # Application source code and components
+├── package.json        # Dependencies and available scripts
+├── README.md           # Project documentation
+├── vite.config.ts      # Vite configuration
+├── tsconfig.json       # TypeScript configuration
+└── vitest.config.ts    # Vitest configuration
+```
 
-Additional files and directories support formatting, linting, development, and application configuration.
+Additional files and directories may support formatting, linting, development, and application configuration.
 
-## 11. Limitations
+The `.env` file, if required, should contain local environment variables and must not be committed if it contains secrets.
+
+## ⚠️ Limitations
 
 Threat Lens is under development. Its current limitations include:
 
@@ -292,7 +292,7 @@ Threat Lens is under development. Its current limitations include:
 
 Always verify suspicious accounts and applications through trusted official sources before taking action.
 
-## 12. Roadmap
+## 🗺️ Roadmap
 
 Potential future improvements include:
 
@@ -306,7 +306,7 @@ Potential future improvements include:
 
 Roadmap items are goals, not claims that these features are already available.
 
-## 13. Contributing
+## 🤝 Contributing
 
 Contributions are welcome.
 
@@ -318,11 +318,10 @@ Contributions are welcome.
 
 Please avoid committing secrets, API keys, access tokens, or personal data. Keep documentation aligned with the actual implementation.
 
-## 14. Disclaimer
+## ⚖️ Disclaimer
 
 Threat Lens is intended to assist with identifying potentially suspicious accounts and applications. It does not guarantee the detection of every scam or impersonation attempt.
 
-Risk scores and alerts are informational and should support, nthreat-lens-murex.vercel.appot replace, independent verification and sound judgment. Do not use the tool as the sole basis for financial, legal, or security-critical decisions.
+Risk scores and alerts are informational and should support, **not replace**, independent verification and sound judgment. Do not use the tool as the sole basis for financial, legal, or security-critical decisions.
 
 The project is provided for educational and defensive purposes. Users are responsible for complying with applicable laws, platform policies, and privacy requirements.
-**Live Demo:** [Threat Lens](https://threat-lens-murex.vercel.app/)
