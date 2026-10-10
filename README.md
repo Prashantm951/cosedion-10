@@ -1,4 +1,4 @@
-# 🛡️ Threat Lens
+# 🛡️ ThreatLens
 
 ### AI-Assisted Digital Risk Protection
 
@@ -43,7 +43,7 @@ Investigating these threats manually can be time-consuming.
 
 ## 💡 Our Solution
 
-Threat Lens aims to provide a centralized workspace for registering brand identities, analyzing suspicious candidates, assigning explainable risk scores, and managing investigations.
+ThreatLens aims to provide a centralized workspace for registering brand identities, analyzing suspicious candidates, assigning explainable risk scores, and managing investigations.
 
 The long-term goal is to combine identity analysis, image comparison, authorized data collection, and AI-assisted investigation in one platform.
 
