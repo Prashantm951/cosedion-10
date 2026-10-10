@@ -112,6 +112,9 @@ function evaluate(
     };
 
   const identity = handleScore(`${input.handle_or_title} ${input.display_name}`, references(brand));
+  const descriptionBrand = input.package_id
+    ? handleScore(input.bio_or_description, [brand.name, ...brand.keywords]).similarity
+    : 0;
   const scam = heuristicScam(input.bio_or_description);
   const account = accountSignalScore({
     ageDays: input.account_age_days,
@@ -143,6 +146,9 @@ function evaluate(
           : "Legitimate / benign";
   const reasons = [
     `Identity similarity: ${identity.similarity}% after normalization.`,
+    ...(input.package_id && descriptionBrand > 0
+      ? [`Description/branding resemblance: ${descriptionBrand}%.`]
+      : []),
     `Logo similarity: ${input.logo_similarity}% (simulated).`,
     ...(identity.flags.length ? [`Look-alike markers: ${identity.flags.join(", ")}.`] : []),
     ...(identity.homoglyphs.length ? ["Name contains a visual character substitution."] : []),
@@ -159,6 +165,7 @@ function evaluate(
     signals: {
       identity_similarity: identity.similarity,
       identity_score: identity.score,
+      description_brand_similarity: descriptionBrand,
       logo_similarity: input.logo_similarity,
       scam_content: Math.round(scam.scam_probability * 100),
       account_or_publisher_risk: publisherRisk,
