@@ -325,3 +325,5 @@ Threat Lens is intended to assist with identifying potentially suspicious accoun
 Risk scores and alerts are informational and should support, **not replace**, independent verification and sound judgment. Do not use the tool as the sole basis for financial, legal, or security-critical decisions.
 
 The project is provided for educational and defensive purposes. Users are responsible for complying with applicable laws, platform policies, and privacy requirements.
+
+**Live Demo:** [Threat Lens](https://threat-lens-murex.vercel.app/)

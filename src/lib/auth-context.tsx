@@ -6,18 +6,19 @@ export type AuthUser = {
   email: string;
 };
 
-type RegisteredAccount = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  createdAt: string;
-};
-
 type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string; code?: string }>;
+  signUp: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string; needsConfirmation?: boolean }>;
+  verifyOtp: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  resendConfirmation: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 };
 
@@ -26,12 +27,12 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: async () => ({ success: false }),
   signUp: async () => ({ success: false }),
+  verifyOtp: async () => ({ success: false }),
+  resendConfirmation: async () => ({ success: false }),
   signOut: async () => {},
 });
 
 const CURRENT_SESSION_KEY = "threatlens_active_user_session";
-const REGISTERED_ACCOUNTS_KEY = "threatlens_registered_accounts";
-
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export function isValidEmail(email: string): boolean {
@@ -42,133 +43,86 @@ export function isValidEmail(email: string): boolean {
   return true;
 }
 
-function cleanInvalidAccounts() {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = localStorage.getItem(REGISTERED_ACCOUNTS_KEY);
-    if (raw) {
-      const accounts = JSON.parse(raw);
-      let changed = false;
-      for (const key of Object.keys(accounts)) {
-        if (!isValidEmail(key)) {
-          delete accounts[key];
-          changed = true;
-        }
-      }
-      if (changed) {
-        localStorage.setItem(REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
-      }
-    }
-    const sessionRaw = localStorage.getItem(CURRENT_SESSION_KEY);
-    if (sessionRaw) {
-      const sess = JSON.parse(sessionRaw);
-      if (sess && !isValidEmail(sess.email)) {
-        localStorage.removeItem(CURRENT_SESSION_KEY);
-      }
-    }
-  } catch {
-    // ignore
-  }
-}
-
-/**
- * SHA-256 password hash using standard Web Crypto API
- */
-async function hashPassword(password: string): Promise<string> {
-  if (typeof crypto !== "undefined" && crypto.subtle) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  }
-  // Fallback string hash
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    hash = (hash << 5) - hash + password.charCodeAt(i);
-    hash |= 0;
-  }
-  return String(hash);
-}
-
-function getStoredAccounts(): Record<string, RegisteredAccount> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(REGISTERED_ACCOUNTS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveStoredAccount(account: RegisteredAccount) {
-  if (typeof window === "undefined") return;
-  try {
-    const accounts = getStoredAccounts();
-    accounts[account.email.toLowerCase()] = account;
-    localStorage.setItem(REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
-  } catch {
-    // ignore
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 0. Clean out any malformed accounts or sessions (e.g. "addsff")
-    cleanInvalidAccounts();
-
-    // 1. Check local session
+    // 1. Initial cached session for instant UX
     if (typeof window !== "undefined") {
-      const cached = localStorage.getItem(CURRENT_SESSION_KEY);
-      if (cached) {
-        try {
+      try {
+        const cached = localStorage.getItem(CURRENT_SESSION_KEY);
+        if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed && isValidEmail(parsed.email)) {
+          if (parsed?.email && isValidEmail(parsed.email)) {
             setUser(parsed);
-          } else {
-            localStorage.removeItem(CURRENT_SESSION_KEY);
           }
-        } catch {
-          // ignore
         }
+      } catch {
+        // ignore
       }
     }
 
-    // 2. Check Supabase session
+    // 2. Fetch active Supabase session
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
         if (session?.user?.email && isValidEmail(session.user.email)) {
-          const u = {
+          const authUser: AuthUser = {
             id: session.user.id,
             email: session.user.email,
           };
-          setUser(u);
+          setUser(authUser);
           if (typeof window !== "undefined") {
-            localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(u));
+            localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(authUser));
           }
+        } else {
+          // If no active Supabase session, clear stale cache
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(CURRENT_SESSION_KEY);
+          }
+          setUser(null);
         }
         setLoading(false);
       })
       .catch(() => {
         setLoading(false);
       });
+
+    // 3. Subscribe to real-time auth changes (e.g. email verification link clicks)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email && isValidEmail(session.user.email)) {
+        const authUser: AuthUser = {
+          id: session.user.id,
+          email: session.user.email,
+        };
+        setUser(authUser);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(authUser));
+        }
+      } else if (!session) {
+        setUser(null);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(CURRENT_SESSION_KEY);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   /**
-   * STRICT SIGN IN:
-   * Only allows users who have created an account.
-   * If user doesn't exist, returns "Account does not exist".
-   * If password doesn't match, returns "Incorrect password".
+   * Remote Supabase Sign In:
+   * Works across all devices, browsers, and deployments.
    */
   const signIn = async (
     emailInput: string,
     passwordInput: string,
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; code?: string }> => {
     const email = emailInput.trim().toLowerCase();
     const password = passwordInput.trim();
 
@@ -183,17 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    // 1. Try remote Supabase authentication
     try {
-      const { data: supaData, error: supaError } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (!supaError && supaData?.user) {
+      if (!error && data?.user) {
         const authUser: AuthUser = {
-          id: supaData.user.id,
-          email: supaData.user.email ?? email,
+          id: data.user.id,
+          email: data.user.email ?? email,
         };
         setUser(authUser);
         if (typeof window !== "undefined") {
@@ -201,50 +154,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return { success: true };
       }
-    } catch {
-      // Continue to check registered accounts registry
+
+      if (error) {
+        const errCode = (error as { code?: string }).code || "";
+        const errMsg = error.message.toLowerCase();
+
+        if (errCode === "email_not_confirmed" || errMsg.includes("email not confirmed")) {
+          return {
+            success: false,
+            error:
+              "Email is not confirmed yet. Please verify your email or enter your confirmation code.",
+            code: "email_not_confirmed",
+          };
+        }
+
+        if (errCode === "invalid_credentials" || errMsg.includes("invalid login credentials")) {
+          return {
+            success: false,
+            error:
+              "Incorrect email or password. Please verify your credentials or create an account.",
+            code: "invalid_credentials",
+          };
+        }
+
+        return {
+          success: false,
+          error: error.message,
+          code: errCode,
+        };
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to sign in. Please try again.";
+      return { success: false, error: message };
     }
 
-    // 2. Check verified registered accounts registry
-    const accounts = getStoredAccounts();
-    const account = accounts[email];
-
-    if (!account) {
-      return {
-        success: false,
-        error: "Account not found. Please create an account first by clicking 'Sign up here'.",
-      };
-    }
-
-    const providedHash = await hashPassword(password);
-    if (account.passwordHash !== providedHash) {
-      return {
-        success: false,
-        error: "Incorrect password. Please verify your credentials and try again.",
-      };
-    }
-
-    // Credentials match registered account
-    const authUser: AuthUser = {
-      id: account.id,
-      email: account.email,
-    };
-    setUser(authUser);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(authUser));
-    }
-    return { success: true };
+    return { success: false, error: "Authentication failed. Please try again." };
   };
 
   /**
-   * STRICT SIGN UP:
-   * Registers a new account with email and password.
-   * Prevents duplicate registration if account already exists.
+   * Remote Supabase Sign Up:
+   * Registers account with cloud backend so it is accessible from any device.
    */
   const signUp = async (
     emailInput: string,
     passwordInput: string,
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; needsConfirmation?: boolean }> => {
     const email = emailInput.trim().toLowerCase();
     const password = passwordInput.trim();
 
@@ -263,48 +217,147 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, error: "Password must be at least 6 characters long." };
     }
 
-    const accounts = getStoredAccounts();
-    if (accounts[email]) {
-      return {
-        success: false,
-        error: "An account with this email already exists. Please sign in instead.",
-      };
-    }
-
-    const newId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `usr-${Date.now().toString(36)}`;
-
-    const passwordHash = await hashPassword(password);
-    const newAccount: RegisteredAccount = {
-      id: newId,
-      email,
-      passwordHash,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Save to registered accounts database
-    saveStoredAccount(newAccount);
-
-    // Also attempt registration on Supabase Auth
     try {
-      await supabase.auth.signUp({ email, password });
-    } catch {
-      // ignore
+      const redirectUrl =
+        typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined;
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+
+      if (error) {
+        const errCode = (error as { code?: string }).code || "";
+        const errMsg = error.message.toLowerCase();
+
+        if (errCode === "weak_password" || errMsg.includes("weak")) {
+          return {
+            success: false,
+            error:
+              "Password is too simple or commonly compromised. Please choose a stronger password.",
+          };
+        }
+
+        if (errCode === "user_already_exists" || errMsg.includes("already registered")) {
+          return {
+            success: false,
+            error: "An account with this email already exists. Please sign in instead.",
+          };
+        }
+
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      // If Supabase has email confirmation disabled, user is immediately logged in
+      if (data?.session && data?.user) {
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email ?? email,
+        };
+        setUser(authUser);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(authUser));
+        }
+        return { success: true, needsConfirmation: false };
+      }
+
+      // Supabase created the user in cloud database, but email confirmation is required
+      return { success: true, needsConfirmation: true };
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to register account. Please try again.";
+      return { success: false, error: message };
+    }
+  };
+
+  /**
+   * Verifies the 6-digit confirmation code sent to the user's email
+   */
+  const verifyOtp = async (
+    emailInput: string,
+    tokenInput: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    const email = emailInput.trim().toLowerCase();
+    const token = tokenInput.trim();
+
+    if (!email || !token) {
+      return { success: false, error: "Please enter the confirmation code." };
     }
 
-    // Log the newly registered user in
-    const authUser: AuthUser = {
-      id: newId,
-      email,
-    };
-    setUser(authUser);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(authUser));
+    try {
+      // Try signup OTP first
+      let res = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "signup",
+      });
+
+      // If signup type failed, try email type
+      if (res.error) {
+        res = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: "email",
+        });
+      }
+
+      if (res.error) {
+        return {
+          success: false,
+          error: res.error.message || "Invalid or expired confirmation code.",
+        };
+      }
+
+      if (res.data?.user) {
+        const authUser: AuthUser = {
+          id: res.data.user.id,
+          email: res.data.user.email ?? email,
+        };
+        setUser(authUser);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(authUser));
+        }
+        return { success: true };
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to verify confirmation code.";
+      return { success: false, error: message };
+    }
+  };
+
+  /**
+   * Resends the confirmation email
+   */
+  const resendConfirmation = async (
+    emailInput: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    const email = emailInput.trim().toLowerCase();
+    if (!email || !isValidEmail(email)) {
+      return { success: false, error: "Please enter a valid email address." };
     }
 
-    return { success: true };
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to resend confirmation email.";
+      return { success: false, error: message };
+    }
   };
 
   const signOut = async () => {
@@ -320,7 +373,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signIn, signUp, verifyOtp, resendConfirmation, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
