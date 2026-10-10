@@ -1,8 +1,8 @@
-# 🛡️ SenttinelX
+# 🛡️ Threat Lens
 
 ### AI-Assisted Digital Risk Protection
 
-SenttinelX is a digital risk protection platform designed to help identify potential brand impersonation, suspicious online identities, scam-related content, and potentially malicious applications.
+Threat Lens is a digital risk protection platform designed to help identify potential brand impersonation, suspicious online identities, scam-related content, and potentially malicious applications.
 
 The project aims to help organizations protect their digital identities through brand identity analysis, suspicious-content detection, and explainable risk scoring.
 
@@ -43,7 +43,7 @@ Investigating these threats manually can be time-consuming.
 
 ## 💡 Our Solution
 
-SenttinelX aims to provide a centralized workspace for registering brand identities, analyzing suspicious candidates, assigning explainable risk scores, and managing investigations.
+Threat Lens aims to provide a centralized workspace for registering brand identities, analyzing suspicious candidates, assigning explainable risk scores, and managing investigations.
 
 The long-term goal is to combine identity analysis, image comparison, authorized data collection, and AI-assisted investigation in one platform.
 
@@ -112,7 +112,7 @@ The application includes investigation and reporting workflows, with persistence
 
 ## 🏗️ System Architecture
 
-The following architecture illustrates the intended SenttinelX workflow, from establishing an official brand baseline to analyzing potential impersonators and generating categorized investigation reports.
+The following architecture illustrates the intended Threat Lens workflow, from establishing an official brand baseline to analyzing potential impersonators and generating categorized investigation reports.
 
 ```mermaid
 flowchart TD
