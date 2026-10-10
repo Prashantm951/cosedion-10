@@ -209,14 +209,14 @@ Higher scores indicate greater potential risk. Scores should be treated as indic
 
 Threat Lens uses the following technologies in its project:
 
-| Technology | Purpose |
-|---|---|
+| Technology           | Purpose                                           |
+| -------------------- | ------------------------------------------------- |
 | React and TypeScript | Building the user interface and application logic |
-| Vite | Development server and build tooling |
-| TanStack Start | Application framework |
-| Tailwind CSS | Styling and responsive layouts |
-| Supabase | Backend and data-related services |
-| Vitest | Testing application code |
+| Vite                 | Development server and build tooling              |
+| TanStack Start       | Application framework                             |
+| Tailwind CSS         | Styling and responsive layouts                    |
+| Supabase             | Backend and data-related services                 |
+| Vitest               | Testing application code                          |
 
 The exact functionality available depends on the current implementation and configuration.
 
