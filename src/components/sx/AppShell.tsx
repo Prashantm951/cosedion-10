@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import { Link } from "@tanstack/react-router";
-import type { Brand } from "@/lib/data";
+import type { Brand } from "@/lib/brand";
 
 type ShellContext = {
   brand: Brand | null;

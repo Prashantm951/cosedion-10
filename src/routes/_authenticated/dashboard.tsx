@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ArrowDown, Search, Upload, Wand2 } from "lucide-react";
-import type { Brand } from "@/lib/data";
+import type { Brand } from "@/lib/brand";
 import { generateCandidates, type ScanCandidate } from "@/lib/monitoring";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

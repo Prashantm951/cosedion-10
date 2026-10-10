@@ -1,4 +1,4 @@
-import type { Brand } from "./data";
+import type { Brand } from "./brand";
 import {
   accountSignalScore,
   finalScore,

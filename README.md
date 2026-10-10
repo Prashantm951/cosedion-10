@@ -1,6 +1,6 @@
-# Senttinelx
+# SentinelX Prototype Tester
 
-Implement exactly the screenshot and nothing else
+Basic Digital Risk Protection prototype for testing brand-input and look-alike detection logic.
 
 This project was built with [Lovable](https://lovable.dev).
 
@@ -24,3 +24,13 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Current Scope
+
+- No auth flow.
+- No Gmail flow.
+- No Supabase/database writes.
+- No live social or app-store crawling.
+- The dashboard accepts brand details, generates simulated official/look-alike/scam candidates, excludes official assets, scores candidates, and lets you search/filter results.
+
+The main tester lives at `/dashboard`.

@@ -11,16 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as AuthenticatedAppsRouteImport } from './routes/_authenticated/apps'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedGraphRouteImport } from './routes/_authenticated/graph'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
-import { Route as AuthenticatedReportsIdRouteImport } from './routes/_authenticated/reports.$id'
-import { Route as AuthenticatedThreatsIndexRouteImport } from './routes/_authenticated/threats.index'
-import { Route as AuthenticatedThreatsIdRouteImport } from './routes/_authenticated/threats.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,148 +22,37 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAppsRoute = AuthenticatedAppsRouteImport.update({
-  id: '/apps',
-  path: '/apps',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedGraphRoute = AuthenticatedGraphRouteImport.update({
-  id: '/graph',
-  path: '/graph',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedReportsIndexRoute =
-  AuthenticatedReportsIndexRouteImport.update({
-    id: '/reports/',
-    path: '/reports/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedReportsIdRoute = AuthenticatedReportsIdRouteImport.update({
-  id: '/reports/$id',
-  path: '/reports/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedThreatsIndexRoute =
-  AuthenticatedThreatsIndexRouteImport.update({
-    id: '/threats/',
-    path: '/threats/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedThreatsIdRoute = AuthenticatedThreatsIdRouteImport.update({
-  id: '/threats/$id',
-  path: '/threats/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/onboarding': typeof OnboardingRoute
-  '/apps': typeof AuthenticatedAppsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/graph': typeof AuthenticatedGraphRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/reports/$id': typeof AuthenticatedReportsIdRoute
-  '/threats/$id': typeof AuthenticatedThreatsIdRoute
-  '/reports/': typeof AuthenticatedReportsIndexRoute
-  '/threats/': typeof AuthenticatedThreatsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/onboarding': typeof OnboardingRoute
-  '/apps': typeof AuthenticatedAppsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/graph': typeof AuthenticatedGraphRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/reports/$id': typeof AuthenticatedReportsIdRoute
-  '/threats/$id': typeof AuthenticatedThreatsIdRoute
-  '/reports': typeof AuthenticatedReportsIndexRoute
-  '/threats': typeof AuthenticatedThreatsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/onboarding': typeof OnboardingRoute
-  '/_authenticated/apps': typeof AuthenticatedAppsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/graph': typeof AuthenticatedGraphRoute
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/reports/$id': typeof AuthenticatedReportsIdRoute
-  '/_authenticated/threats/$id': typeof AuthenticatedThreatsIdRoute
-  '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
-  '/_authenticated/threats/': typeof AuthenticatedThreatsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/onboarding'
-    | '/apps'
-    | '/dashboard'
-    | '/graph'
-    | '/settings'
-    | '/reports/$id'
-    | '/threats/$id'
-    | '/reports/'
-    | '/threats/'
+  fullPaths: '/' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth'
-    | '/onboarding'
-    | '/apps'
-    | '/dashboard'
-    | '/graph'
-    | '/settings'
-    | '/reports/$id'
-    | '/threats/$id'
-    | '/reports'
-    | '/threats'
-  id:
-    | '__root__'
-    | '/'
-    | '/_authenticated'
-    | '/auth'
-    | '/onboarding'
-    | '/_authenticated/apps'
-    | '/_authenticated/dashboard'
-    | '/_authenticated/graph'
-    | '/_authenticated/settings'
-    | '/_authenticated/reports/$id'
-    | '/_authenticated/threats/$id'
-    | '/_authenticated/reports/'
-    | '/_authenticated/threats/'
+  to: '/' | '/dashboard'
+  id: '__root__' | '/' | '/_authenticated' | '/_authenticated/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
-  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -191,27 +71,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/apps': {
-      id: '/_authenticated/apps'
-      path: '/apps'
-      fullPath: '/apps'
-      preLoaderRoute: typeof AuthenticatedAppsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -219,71 +78,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/graph': {
-      id: '/_authenticated/graph'
-      path: '/graph'
-      fullPath: '/graph'
-      preLoaderRoute: typeof AuthenticatedGraphRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/reports/': {
-      id: '/_authenticated/reports/'
-      path: '/reports'
-      fullPath: '/reports/'
-      preLoaderRoute: typeof AuthenticatedReportsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/reports/$id': {
-      id: '/_authenticated/reports/$id'
-      path: '/reports/$id'
-      fullPath: '/reports/$id'
-      preLoaderRoute: typeof AuthenticatedReportsIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/threats/': {
-      id: '/_authenticated/threats/'
-      path: '/threats'
-      fullPath: '/threats/'
-      preLoaderRoute: typeof AuthenticatedThreatsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/threats/$id': {
-      id: '/_authenticated/threats/$id'
-      path: '/threats/$id'
-      fullPath: '/threats/$id'
-      preLoaderRoute: typeof AuthenticatedThreatsIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAppsRoute: typeof AuthenticatedAppsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedGraphRoute: typeof AuthenticatedGraphRoute
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedReportsIdRoute: typeof AuthenticatedReportsIdRoute
-  AuthenticatedThreatsIdRoute: typeof AuthenticatedThreatsIdRoute
-  AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
-  AuthenticatedThreatsIndexRoute: typeof AuthenticatedThreatsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAppsRoute: AuthenticatedAppsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedGraphRoute: AuthenticatedGraphRoute,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedReportsIdRoute: AuthenticatedReportsIdRoute,
-  AuthenticatedThreatsIdRoute: AuthenticatedThreatsIdRoute,
-  AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
-  AuthenticatedThreatsIndexRoute: AuthenticatedThreatsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -292,8 +95,6 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
-  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
