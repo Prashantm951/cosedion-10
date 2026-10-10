@@ -176,7 +176,7 @@ export function ThreatGraph({
         </text>
       </svg>
       {hover && (
-        <div className="glass pointer-events-none absolute left-4 top-4 rounded-xl px-3 py-2 text-sm">
+        <div className="neo-card pointer-events-none absolute left-4 top-4 rounded-lg border border-[#2A6B5C]/60 px-3 py-1.5 text-xs shadow-[4px_4px_12px_rgba(4,16,13,0.85)]">
           <div className="font-mono">@{hover.label}</div>
           <div className="text-xs text-muted-foreground">
             {hover.platform} · risk{" "}

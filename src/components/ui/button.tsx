@@ -5,24 +5,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-xs font-medium cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-3.5 [&_svg]:shrink-0 select-none",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground glow-primary hover:bg-primary/90 rounded-lg font-semibold",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 rounded-lg",
-        outline:
-          "border border-input bg-surface/60 hover:bg-accent hover:border-primary/40 rounded-lg",
-        secondary: "bg-secondary text-secondary-foreground border border-border hover:bg-accent rounded-lg",
-        ghost: "hover:bg-accent hover:text-accent-foreground rounded-lg",
+        default:
+          "neo-btn-primary shadow-[2px_2px_6px_rgba(5,18,15,0.7),-2px_-2px_5px_rgba(196,154,69,0.3)] active:shadow-[inset_2px_2px_4px_rgba(60,40,5,0.7)] text-brand-pine font-semibold",
+        destructive:
+          "bg-[#802222] text-white border border-[#a83232]/60 shadow-[2px_2px_6px_rgba(5,18,15,0.7)] hover:bg-[#962828] active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.7)]",
+        outline: "neo-btn border border-[rgba(42,107,92,0.5)] text-foreground hover:text-white",
+        secondary: "neo-btn border border-[rgba(42,107,92,0.4)] text-foreground hover:text-white",
+        ghost:
+          "text-muted-foreground hover:text-foreground hover:bg-surface/60 rounded-md transition-colors",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "bg-gradient-brand text-primary-foreground glow-primary rounded-xl font-semibold hover:brightness-110",
+        hero: "neo-btn-primary rounded-lg font-bold shadow-[3px_3px_10px_rgba(5,18,15,0.8),-2px_-2px_8px_rgba(196,154,69,0.4)]",
+        tactical:
+          "bg-[#133c33] border border-[#2A6B5C]/50 text-foreground shadow-[inset_1px_1px_3px_rgba(5,18,15,0.8)] hover:border-[#C49A45]/60 hover:text-[#C49A45]",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9",
+        default: "h-8 px-3 py-1 text-xs",
+        sm: "h-7 px-2.5 py-0.5 text-[11px]",
+        lg: "h-9 px-4 py-1.5 text-sm",
+        icon: "h-7 w-7 p-0",
       },
     },
     defaultVariants: {

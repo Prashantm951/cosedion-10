@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/sx/Logo";
-import { ShieldCheck, Lock, Mail, ArrowRight, Database } from "lucide-react";
+import { Lock, Mail, ArrowRight, Database, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Authentication — SentinelX Digital Risk Protection" },
-      { name: "description", content: "Sign in to SentinelX to monitor and protect your brand." },
+      { title: "Authentication — ThreatLens Threat Intelligence" },
+      {
+        name: "description",
+        content: "Sign in to ThreatLens to monitor threats and protect your brand.",
+      },
     ],
   }),
   component: AuthPage,
@@ -68,30 +71,29 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center cyber-bg px-4 py-12">
-      <div className="glass w-full max-w-md rounded-2xl border border-border p-8 shadow-2xl">
+      <div className="neo-card w-full max-w-md p-7 shadow-[8px_8px_20px_rgba(4,16,13,0.85),-5px_-5px_14px_rgba(42,107,92,0.35)] border border-[#2A6B5C]/50 rounded-2xl">
         <div className="flex items-center justify-between">
           <Logo />
-          <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs text-primary font-mono">
-            <Database className="h-3 w-3" />
-            <span>PostgreSQL</span>
-          </div>
         </div>
 
-        <div className="mt-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {mode === "signin" ? "Sign in to SentinelX" : "Create SentinelX Account"}
+        <div className="mt-7">
+          <h1 className="text-xl font-bold tracking-tight text-[#E8DCC4]">
+            {mode === "signin" ? "Sign in to ThreatLens" : "Create ThreatLens Account"}
           </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             {mode === "signin"
-              ? "Access brand baselines, look-alike scanning, and scan reports."
-              : "Set up enterprise brand protection and automated candidate detection."}
+              ? "Access brand baselines, look-alike telemetry, and threat reports."
+              : "Set up enterprise brand defense and automated candidate detection."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5" /> Email Address
+            <Label
+              htmlFor="email"
+              className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"
+            >
+              <Mail className="h-3.5 w-3.5 text-[#C49A45]" /> Email Address
             </Label>
             <Input
               id="email"
@@ -100,16 +102,18 @@ function AuthPage() {
               placeholder="name@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-background/60"
             />
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[10px] text-muted-foreground/70">
               Must be a valid email (e.g. yourname@gmail.com)
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5" /> Password
+            <Label
+              htmlFor="password"
+              className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"
+            >
+              <Lock className="h-3.5 w-3.5 text-[#C49A45]" /> Password
             </Label>
             <Input
               id="password"
@@ -119,25 +123,33 @@ function AuthPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-background/60"
             />
           </div>
 
-          <Button type="submit" className="w-full h-10 mt-2 font-medium" disabled={busy}>
+          <Button
+            type="submit"
+            variant="default"
+            className="w-full h-8 mt-2 font-mono text-xs font-semibold"
+            disabled={busy}
+          >
             {busy ? (
               "Authenticating..."
             ) : mode === "signin" ? (
-              <span className="flex items-center gap-2">Sign In <ArrowRight className="h-4 w-4" /></span>
+              <span className="flex items-center gap-1.5">
+                Sign In <ArrowRight className="h-3.5 w-3.5" />
+              </span>
             ) : (
-              <span className="flex items-center gap-2">Create Account <ArrowRight className="h-4 w-4" /></span>
+              <span className="flex items-center gap-1.5">
+                Create Account <ArrowRight className="h-3.5 w-3.5" />
+              </span>
             )}
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-5 text-center">
           <button
             type="button"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+            className="text-xs text-muted-foreground hover:text-[#C49A45] transition-colors underline-offset-4 hover:underline"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           >
             {mode === "signin"

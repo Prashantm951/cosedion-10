@@ -26,23 +26,33 @@ import {
   UserCheck,
   Wand2,
   XCircle,
+  Activity,
+  Crosshair,
+  Radar,
 } from "lucide-react";
 import type { Brand } from "@/lib/brand";
 import { generateCandidates, type ScanCandidate } from "@/lib/monitoring";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { saveBrandBaseline, loadBrandBaseline, saveScanResults, getScanHistory, type StoredScan } from "@/lib/db";
+import {
+  saveBrandBaseline,
+  loadBrandBaseline,
+  saveScanResults,
+  getScanHistory,
+  type StoredScan,
+} from "@/lib/db";
 import { toast } from "sonner";
 import { HandleDiff } from "@/components/sx/HandleDiff";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Threat Intelligence Command Center — SentinelX" },
+      { title: "Threat Intelligence Command Center — ThreatLens" },
       {
         name: "description",
-        content: "Automated brand baseline protection, candidate look-alike analysis, and categorized scan reporting.",
+        content:
+          "Automated brand baseline protection, candidate look-alike analysis, and categorized scan reporting with ThreatLens.",
       },
     ],
   }),
@@ -86,7 +96,6 @@ export function Dashboard() {
   const [activeTab, setActiveTab] = useState<"all" | "scam" | "impersonation" | "official">("all");
   const [pipelineStep, setPipelineStep] = useState<number>(1);
   const [isScanning, setIsScanning] = useState(false);
-  const [isSavingBaseline, setIsSavingBaseline] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<ScanCandidate | null>(null);
   const [takedownModalCandidate, setTakedownModalCandidate] = useState<ScanCandidate | null>(null);
   const [scanHistory, setScanHistory] = useState<StoredScan[]>([]);
@@ -112,7 +121,7 @@ export function Dashboard() {
         setPipelineStep(2);
       } else {
         if (typeof window !== "undefined") {
-          localStorage.removeItem("sentinelx_active_brand");
+          localStorage.removeItem("threatlens_active_brand");
         }
       }
     });
@@ -127,30 +136,27 @@ export function Dashboard() {
     setCandidates([]);
     setPipelineStep(1);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("sentinelx_active_brand");
+      localStorage.removeItem("threatlens_active_brand");
     }
     toast.info("Form cleared. Enter your brand details.");
   };
 
-  // Handle saving brand baseline to PostgreSQL
-  const handleSaveBaseline = async () => {
-    if (!form.brandName.trim()) {
-      toast.error("Brand name is required to establish baseline.");
-      return;
-    }
-    setIsSavingBaseline(true);
-    try {
+  // Automatically save and persist brand baseline in the background
+  useEffect(() => {
+    if (!form.brandName.trim()) return;
+    const timer = setTimeout(() => {
       const currentBrand = formToBrand(form);
-      const saved = await saveBrandBaseline(currentBrand);
-      setSavedBrand(saved);
-      setPipelineStep(2);
-      toast.success(`Official baseline for "${saved.name}" stored in PostgreSQL!`);
-    } catch {
-      toast.error("Failed to save brand baseline.");
-    } finally {
-      setIsSavingBaseline(false);
-    }
-  };
+      saveBrandBaseline(currentBrand)
+        .then((saved) => {
+          setSavedBrand(saved);
+          if (pipelineStep < 2) {
+            setPipelineStep(2);
+          }
+        })
+        .catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [form, pipelineStep]);
 
   // Run the full sequence from the flowchart
   const handleRunFullScan = async () => {
@@ -195,7 +201,7 @@ export function Dashboard() {
       setPipelineStep(8);
 
       toast.success(
-        `Scan complete! Generated categorized report with ${generated.length} candidates.`
+        `Scan complete! ThreatLens generated categorized report with ${generated.length} candidates.`,
       );
     } catch (err) {
       toast.error("Scan pipeline encountered an error.");
@@ -207,20 +213,20 @@ export function Dashboard() {
   // Categorized candidate groups
   const official = useMemo(
     () => candidates.filter((c) => c.classification === "Legitimate / official"),
-    [candidates]
+    [candidates],
   );
   const impersonations = useMemo(
     () =>
       candidates.filter(
         (c) =>
           c.classification === "Potential impersonation" ||
-          c.classification === "High-risk impersonation"
+          c.classification === "High-risk impersonation",
       ),
-    [candidates]
+    [candidates],
   );
   const scams = useMemo(
     () => candidates.filter((c) => c.classification === "Likely scam"),
-    [candidates]
+    [candidates],
   );
 
   // Filtered rows for current active tab & search
@@ -236,26 +242,26 @@ export function Dashboard() {
       [c.platform_or_store, c.handle_or_title, c.display_name, c.bio_or_description, ...c.reasons]
         .join(" ")
         .toLowerCase()
-        .includes(q)
+        .includes(q),
     );
   }, [candidates, activeTab, scams, impersonations, official, query]);
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-7 pb-24">
       {/* ─────────────────────────────────────────────────────────────
-          FLOWCHART SEQUENCE TRACKER (Matches Core Logic Flowchart)
+          FLOWCHART SEQUENCE TRACKER (Tactile Neomorphism Pipeline)
          ───────────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-border/80 bg-surface/50 p-4 shadow-sm backdrop-blur-sm">
+      <div id="pipeline-tracker" className="neo-card p-4 border border-[#2A6B5C]/50">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Layers className="h-4 w-4 text-[#C49A45]" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#E8DCC4] font-mono">
               Core Logic Sequence — Flowchart Execution Pipeline
             </span>
           </div>
           <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
             <span>Pipeline State:</span>
-            <span className="rounded bg-primary/10 px-2 py-0.5 font-semibold text-primary">
+            <span className="rounded bg-[#123830] border border-[#2A6B5C]/60 px-2 py-0.5 font-bold text-[#C49A45] shadow-[inset_1px_1px_2px_rgba(5,18,15,0.7)]">
               Step {pipelineStep} of 8
             </span>
           </div>
@@ -272,7 +278,7 @@ export function Dashboard() {
             step={2}
             current={pipelineStep}
             title="Save Baseline"
-            desc="Store in Postgres"
+            desc="Auto-persisted"
           />
           <PipelineNode
             step={3}
@@ -314,19 +320,20 @@ export function Dashboard() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 1 & 2: BRAND DETAILS & OFFICIAL BASELINE
+          SECTION 1 & 2: BRAND DETAILS & OFFICIAL BASELINE (Neomorphism)
          ───────────────────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
+      <section id="baseline-setup" className="neo-card p-5 border border-[#2A6B5C]/50">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#2A6B5C]/40 pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary font-mono">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#123830] border border-[#C49A45]/60 text-[11px] font-bold text-[#C49A45] font-mono shadow-[inset_1px_1px_2px_rgba(0,0,0,0.6)]">
                 1
               </span>
-              <h2 className="text-lg font-bold text-foreground">Official Brand Baseline Setup</h2>
+              <h2 className="text-base font-bold text-[#E8DCC4]">Official Brand Baseline Setup</h2>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Define the approved identity assets for your brand. All incoming candidates are verified against this baseline.
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Define the approved identity assets for your brand. All incoming candidates are
+              verified against this baseline.
             </p>
           </div>
 
@@ -336,177 +343,163 @@ export function Dashboard() {
               variant="outline"
               size="sm"
               onClick={handleClearForm}
-              className="text-xs font-mono text-muted-foreground hover:text-foreground"
+              className="text-xs font-mono text-muted-foreground hover:text-white"
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Clear Form
-            </Button>
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={handleSaveBaseline}
-              disabled={isSavingBaseline}
-              className="text-xs font-mono"
-            >
-              <Database className="h-3.5 w-3.5 mr-1" />
-              {isSavingBaseline ? "Saving..." : "Save Baseline to DB"}
+              <RotateCcw className="h-3 w-3 mr-1" /> Clear Form
             </Button>
           </div>
         </div>
 
-        {/* Input Form Fields */}
-        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Input Form Fields - Neomorphic Debossed Containers */}
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Identity */}
-          <div className="space-y-4 rounded-lg border border-border/60 bg-surface/30 p-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary font-mono">
+          <div className="space-y-3.5 rounded-lg border border-[#2A6B5C]/40 bg-[#143d34] p-3.5 shadow-[inset_2px_2px_5px_rgba(5,18,15,0.7),inset_-1px_-1px_4px_rgba(42,107,92,0.2)]">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#C49A45] font-mono">
               <Shield className="h-3.5 w-3.5" /> Identity & Branding
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Brand Name *</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-[#E8DCC4]">Brand Name *</Label>
               <Input
                 value={form.brandName}
                 onChange={(e) => setForm({ ...form, brandName: e.target.value })}
                 placeholder="e.g. NovaPay"
-                className="bg-background/80"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Aliases & Search Keywords</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-[#E8DCC4]">
+                Aliases & Search Keywords
+              </Label>
               <Input
                 value={form.aliases}
                 onChange={(e) => setForm({ ...form, aliases: e.target.value })}
                 placeholder="Comma separated (e.g. Nova Pay, NovaWallet)"
-                className="bg-background/80"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Official Logo URL</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-[#E8DCC4]">Official Logo URL</Label>
               <Input
                 value={form.logoUrl}
                 onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
                 placeholder="https://... logo image link"
-                className="bg-background/80 font-mono text-xs"
               />
             </div>
           </div>
 
           {/* Social Media Handles */}
-          <div className="space-y-4 rounded-lg border border-border/60 bg-surface/30 p-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary font-mono">
+          <div className="space-y-3.5 rounded-lg border border-[#2A6B5C]/40 bg-[#143d34] p-3.5 shadow-[inset_2px_2px_5px_rgba(5,18,15,0.7),inset_-1px_-1px_4px_rgba(42,107,92,0.2)]">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#C49A45] font-mono">
               <Globe className="h-3.5 w-3.5" /> Approved Official Handles
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">X (Twitter)</Label>
+                <Label className="text-[10px] text-muted-foreground">X (Twitter)</Label>
                 <Input
                   value={form.x}
                   onChange={(e) => setForm({ ...form, x: e.target.value })}
                   placeholder="novapay"
-                  className="bg-background/80 text-xs font-mono"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">Instagram</Label>
+                <Label className="text-[10px] text-muted-foreground">Instagram</Label>
                 <Input
                   value={form.instagram}
                   onChange={(e) => setForm({ ...form, instagram: e.target.value })}
                   placeholder="novapay_official"
-                  className="bg-background/80 text-xs font-mono"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">Facebook</Label>
+                <Label className="text-[10px] text-muted-foreground">Facebook</Label>
                 <Input
                   value={form.facebook}
                   onChange={(e) => setForm({ ...form, facebook: e.target.value })}
                   placeholder="novapay.finance"
-                  className="bg-background/80 text-xs font-mono"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">Telegram</Label>
+                <Label className="text-[10px] text-muted-foreground">Telegram</Label>
                 <Input
                   value={form.telegram}
                   onChange={(e) => setForm({ ...form, telegram: e.target.value })}
                   placeholder="novapay_channel"
-                  className="bg-background/80 text-xs font-mono"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">YouTube</Label>
+              <Label className="text-[10px] text-muted-foreground">YouTube</Label>
               <Input
                 value={form.youtube}
                 onChange={(e) => setForm({ ...form, youtube: e.target.value })}
                 placeholder="NovaPayOfficial"
-                className="bg-background/80 text-xs font-mono"
               />
             </div>
           </div>
 
           {/* Apps & Domains */}
-          <div className="space-y-4 rounded-lg border border-border/60 bg-surface/30 p-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary font-mono">
+          <div className="space-y-3.5 rounded-lg border border-[#2A6B5C]/40 bg-[#143d34] p-3.5 shadow-[inset_2px_2px_5px_rgba(5,18,15,0.7),inset_-1px_-1px_4px_rgba(42,107,92,0.2)]">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#C49A45] font-mono">
               <Smartphone className="h-3.5 w-3.5" /> Mobile Apps & Domains
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Official Domains</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-[#E8DCC4]">Official Domains</Label>
               <Input
                 value={form.domains}
                 onChange={(e) => setForm({ ...form, domains: e.target.value })}
                 placeholder="novapay.com, novapay.io"
-                className="bg-background/80 text-xs font-mono"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Approved App Package IDs</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-[#E8DCC4]">
+                Approved App Package IDs
+              </Label>
               <Input
                 value={form.appIds}
                 onChange={(e) => setForm({ ...form, appIds: e.target.value })}
                 placeholder="com.novapay.app, com.novapay.wallet"
-                className="bg-background/80 text-xs font-mono"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Authorized App Publishers</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium text-[#E8DCC4]">
+                Authorized App Publishers
+              </Label>
               <Input
                 value={form.publishers}
                 onChange={(e) => setForm({ ...form, publishers: e.target.value })}
                 placeholder="NovaPay Technologies Ltd"
-                className="bg-background/80 text-xs"
               />
             </div>
           </div>
         </div>
 
-        {/* Action Trigger */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-5 w-5 text-primary" />
+        {/* Action Trigger - Dense Neomorphic Bar */}
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3.5 rounded-lg border border-[#2A6B5C]/60 bg-[#133c33] p-3.5 shadow-[2px_2px_6px_rgba(5,18,15,0.7)]">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="h-4 w-4 text-[#C49A45]" />
             <div>
-              <div className="text-sm font-semibold text-foreground">
+              <div className="text-xs font-bold text-[#E8DCC4]">
                 Ready to execute automated candidate detection
               </div>
-              <div className="text-xs text-muted-foreground">
-                Generates candidates, ingests to PostgreSQL, excludes approved baseline, and scores remaining impersonators.
+              <div className="text-[11px] text-muted-foreground">
+                Generates candidates, ingests data, excludes approved baseline, and scores remaining
+                impersonators.
               </div>
             </div>
           </div>
 
           <Button
-            size="lg"
+            size="default"
+            variant="default"
             onClick={handleRunFullScan}
             disabled={isScanning}
-            className="w-full sm:w-auto font-medium shadow-md"
+            className="w-full sm:w-auto font-mono text-xs font-bold h-8 px-4"
           >
             {isScanning ? (
-              <span className="flex items-center gap-2">
-                <RotateCcw className="h-4 w-4 animate-spin" />
+              <span className="flex items-center gap-1.5">
+                <RotateCcw className="h-3.5 w-3.5 animate-spin" />
                 Executing Pipeline...
               </span>
             ) : (
-              <span className="flex items-center gap-2">
-                <Play className="h-4 w-4 fill-current" />
+              <span className="flex items-center gap-1.5">
+                <Play className="h-3.5 w-3.5 fill-current" />
                 Execute Full Scan Pipeline
               </span>
             )}
@@ -515,97 +508,86 @@ export function Dashboard() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 8: CATEGORIZED SCAN REPORT & METRICS BREAKDOWN
+          SECTION 8: CATEGORIZED SCAN REPORT (Spatial UI Theme for Threats)
          ───────────────────────────────────────────────────────────── */}
       {candidates.length > 0 && (
-        <section className="space-y-6">
-          {/* KPI Summary Strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+        <section id="threats-report" className="space-y-5">
+          {/* KPI Summary Strip - Neomorphic Tiles */}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+            <div className="neo-card p-3 border border-[#2A6B5C]/40">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                 Total Scanned
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-foreground">
+              <div className="mt-1 text-xl font-bold font-mono text-[#E8DCC4]">
                 {candidates.length}
               </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">
-                Profiles, pages & apps
-              </div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground">Profiles, pages & apps</div>
             </div>
 
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-              <div className="text-xs font-mono uppercase tracking-wider text-emerald-400">
+            <div className="neo-card p-3 border border-[#36aa80]/40 bg-[#153f36]">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#55cca0]">
                 Official Verified
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-emerald-400">
+              <div className="mt-1 text-xl font-bold font-mono text-[#55cca0]">
                 {official.length}
               </div>
-              <div className="mt-1 text-[11px] text-emerald-500/70">
-                Baseline excluded
-              </div>
+              <div className="mt-0.5 text-[10px] text-[#55cca0]/70">Baseline excluded</div>
             </div>
 
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <div className="text-xs font-mono uppercase tracking-wider text-amber-400">
+            <div className="neo-card p-3 border border-[#C49A45]/40 bg-[#184239]">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#C49A45]">
                 Impersonations
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-amber-400">
+              <div className="mt-1 text-xl font-bold font-mono text-[#C49A45]">
                 {impersonations.length}
               </div>
-              <div className="mt-1 text-[11px] text-amber-500/70">
-                Look-alikes & clones
-              </div>
+              <div className="mt-0.5 text-[10px] text-[#C49A45]/70">Look-alikes & clones</div>
             </div>
 
-            <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4">
-              <div className="text-xs font-mono uppercase tracking-wider text-rose-400">
+            <div className="neo-card p-3 border border-[#e25252]/40 bg-[#1c3933]">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#ff7575]">
                 Likely Scams
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-rose-400">
-                {scams.length}
-              </div>
-              <div className="mt-1 text-[11px] text-rose-500/70">
-                Active fraud & lures
-              </div>
+              <div className="mt-1 text-xl font-bold font-mono text-[#ff7575]">{scams.length}</div>
+              <div className="mt-0.5 text-[10px] text-[#ff7575]/70">Active fraud & lures</div>
             </div>
 
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <div className="text-xs font-mono uppercase tracking-wider text-primary">
+            <div className="neo-card p-3 border border-[#C49A45]/50 bg-[#17483e]">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#E8DCC4]">
                 Threat Ratio
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-primary">
+              <div className="mt-1 text-xl font-bold font-mono text-[#C49A45]">
                 {Math.round(((impersonations.length + scams.length) / candidates.length) * 100)}%
               </div>
-              <div className="mt-1 text-[11px] text-primary/70">
-                Requiring review
-              </div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground">Requiring review</div>
             </div>
           </div>
 
-          {/* Categorized Report Explorer */}
-          <div className="rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border p-5">
+          {/* Categorized Report Explorer - Spatial UI Threat Telemetry Panel */}
+          <div className="neo-card border border-[#2A6B5C]/60 shadow-[8px_8px_20px_rgba(4,16,13,0.85),-5px_-5px_14px_rgba(42,107,92,0.35)]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#2A6B5C]/40 p-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary font-mono">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#123830] border border-[#C49A45]/60 text-[11px] font-bold text-[#C49A45] font-mono shadow-[inset_1px_1px_2px_rgba(0,0,0,0.6)]">
                     8
                   </span>
-                  <h3 className="text-lg font-bold text-foreground">Categorized Threat Report</h3>
+                  <h3 className="text-base font-bold text-[#E8DCC4]">Categorized Threat Report</h3>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Stored in PostgreSQL database. Candidates grouped according to multi-signal analysis.
+                  Stored in ThreatLens database. Candidates analyzed across homoglyph, logo, and
+                  keyword signals.
                 </p>
               </div>
 
-              {/* Search & Filter Controls */}
+              {/* Search & Filter Controls - Dense */}
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="relative flex-1 sm:w-60">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search candidate, handle, bio..."
-                    className="pl-9 h-9 text-xs bg-background/80"
+                    className="pl-8 h-8 text-xs"
                   />
                 </div>
 
@@ -613,76 +595,80 @@ export function Dashboard() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(candidates, null, 2));
+                    const dataStr =
+                      "data:text/json;charset=utf-8," +
+                      encodeURIComponent(JSON.stringify(candidates, null, 2));
                     const dl = document.createElement("a");
                     dl.setAttribute("href", dataStr);
-                    dl.setAttribute("download", `sentinelx_scan_${Date.now()}.json`);
+                    dl.setAttribute("download", `threatlens_scan_${Date.now()}.json`);
                     dl.click();
-                    toast.success("Scan report exported as JSON");
+                    toast.success("Threat report exported as JSON");
                   }}
-                  className="h-9 text-xs font-mono"
+                  className="h-8 text-xs font-mono"
                 >
-                  <FileDown className="h-3.5 w-3.5 mr-1" /> Export JSON
+                  <FileDown className="h-3 w-3 mr-1 text-[#C49A45]" /> Export JSON
                 </Button>
               </div>
             </div>
 
-            {/* Classification Tabs */}
-            <div className="flex items-center gap-2 border-b border-border bg-surface/40 px-5 py-2.5 overflow-x-auto text-xs font-medium">
+            {/* Classification Tabs - Neomorphic Inset Ribbon */}
+            <div className="flex items-center gap-1.5 border-b border-[#2A6B5C]/40 bg-[#133c33] px-4 py-2 overflow-x-auto text-xs font-mono">
               <button
                 onClick={() => setActiveTab("all")}
-                className={`rounded-md px-3 py-1.5 transition-colors ${
+                className={`rounded-md px-2.5 py-1 text-xs transition-all ${
                   activeTab === "all"
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#C49A45] text-[#123F36] font-bold shadow-[inset_1px_1px_3px_rgba(60,40,5,0.7)]"
+                    : "text-muted-foreground hover:text-white"
                 }`}
               >
                 All Candidates ({candidates.length})
               </button>
               <button
                 onClick={() => setActiveTab("scam")}
-                className={`rounded-md px-3 py-1.5 transition-colors flex items-center gap-1.5 ${
+                className={`rounded-md px-2.5 py-1 text-xs transition-all flex items-center gap-1.5 ${
                   activeTab === "scam"
-                    ? "bg-rose-600 text-white font-semibold"
-                    : "text-rose-400 hover:bg-rose-500/10"
+                    ? "bg-[#e25252] text-white font-bold shadow-[inset_1px_1px_3px_rgba(0,0,0,0.7)]"
+                    : "text-[#ff8585] hover:bg-[#194339]"
                 }`}
               >
-                <Flame className="h-3.5 w-3.5" /> Likely Scam ({scams.length})
+                <Flame className="h-3 w-3" /> Likely Scam ({scams.length})
               </button>
               <button
                 onClick={() => setActiveTab("impersonation")}
-                className={`rounded-md px-3 py-1.5 transition-colors flex items-center gap-1.5 ${
+                className={`rounded-md px-2.5 py-1 text-xs transition-all flex items-center gap-1.5 ${
                   activeTab === "impersonation"
-                    ? "bg-amber-600 text-white font-semibold"
-                    : "text-amber-400 hover:bg-amber-500/10"
+                    ? "bg-[#C49A45] text-[#123F36] font-bold shadow-[inset_1px_1px_3px_rgba(60,40,5,0.7)]"
+                    : "text-[#e0b45a] hover:bg-[#194339]"
                 }`}
               >
-                <ShieldAlert className="h-3.5 w-3.5" /> Potential Impersonation ({impersonations.length})
+                <ShieldAlert className="h-3 w-3" /> Potential Impersonation ({impersonations.length}
+                )
               </button>
               <button
                 onClick={() => setActiveTab("official")}
-                className={`rounded-md px-3 py-1.5 transition-colors flex items-center gap-1.5 ${
+                className={`rounded-md px-2.5 py-1 text-xs transition-all flex items-center gap-1.5 ${
                   activeTab === "official"
-                    ? "bg-emerald-600 text-white font-semibold"
-                    : "text-emerald-400 hover:bg-emerald-500/10"
+                    ? "bg-[#36aa80] text-[#123F36] font-bold shadow-[inset_1px_1px_3px_rgba(0,0,0,0.7)]"
+                    : "text-[#55cca0] hover:bg-[#194339]"
                 }`}
               >
-                <UserCheck className="h-3.5 w-3.5" /> Legitimate / Official ({official.length})
+                <UserCheck className="h-3 w-3" /> Legitimate / Official ({official.length})
               </button>
             </div>
 
-            {/* Candidate Cards Grid */}
-            <div className="p-5">
+            {/* Candidate Cards Grid - Spatial UI Theme for Threats */}
+            <div className="p-4">
               {filteredCandidates.length === 0 ? (
-                <div className="py-12 text-center text-sm text-muted-foreground">
-                  No candidates match the selected filter.
+                <div className="py-12 text-center text-xs text-muted-foreground font-mono">
+                  No threat candidates match the selected filter.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredCandidates.map((candidate) => (
+                <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredCandidates.map((candidate, idx) => (
                     <CandidateCard
                       key={`${candidate.platform_or_store}-${candidate.handle_or_title}`}
                       candidate={candidate}
+                      index={idx}
                       officialLogo={brand.logo_url}
                       onInspect={() => setSelectedCandidate(candidate)}
                       onTakedown={() => setTakedownModalCandidate(candidate)}
@@ -696,7 +682,95 @@ export function Dashboard() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          INSPECTION DRAWER MODAL
+          FLOATING TAB IN THE CENTRE DOWN (Only taking space needed)
+         ───────────────────────────────────────────────────────────── */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-fit w-auto pointer-events-auto">
+        <div className="neo-floating-dock rounded-full px-2 py-1.5 flex items-center gap-1.5 shadow-[0_14px_30px_rgba(4,15,13,0.9),-4px_-4px_14px_rgba(42,107,92,0.35),inset_0_1px_0_rgba(232,220,196,0.18)]">
+          <button
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            title="Jump to Top / Flowchart"
+            className="h-7 px-2.5 rounded-full text-[11px] font-mono text-[#E8DCC4] hover:text-[#C49A45] hover:bg-[#123830] transition-colors flex items-center gap-1"
+          >
+            <Layers className="h-3 w-3 text-[#C49A45]" />
+            <span className="hidden sm:inline">Pipeline</span>
+          </button>
+
+          <div className="h-3.5 w-px bg-[#2A6B5C]/60" />
+
+          {/* Quick tab switcher that takes only space needed */}
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`h-7 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 ${
+              activeTab === "all"
+                ? "bg-[#C49A45] text-[#123F36] font-bold shadow-[inset_1px_1px_3px_rgba(60,40,5,0.6)]"
+                : "text-[#E8DCC4] hover:bg-[#123830]"
+            }`}
+          >
+            <span>All</span>
+            <span className="text-[10px] opacity-80">({candidates.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("scam")}
+            className={`h-7 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 ${
+              activeTab === "scam"
+                ? "bg-[#e25252] text-white font-bold shadow-[inset_1px_1px_3px_rgba(0,0,0,0.6)]"
+                : "text-[#ff8585] hover:bg-[#123830]"
+            }`}
+          >
+            <Flame className="h-3 w-3" />
+            <span>Scams</span>
+            <span className="text-[10px] opacity-80">({scams.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("impersonation")}
+            className={`h-7 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 ${
+              activeTab === "impersonation"
+                ? "bg-[#C49A45] text-[#123F36] font-bold shadow-[inset_1px_1px_3px_rgba(60,40,5,0.6)]"
+                : "text-[#e0b45a] hover:bg-[#123830]"
+            }`}
+          >
+            <ShieldAlert className="h-3 w-3" />
+            <span className="hidden sm:inline">Impersonations</span>
+            <span className="sm:hidden">Clones</span>
+            <span className="text-[10px] opacity-80">({impersonations.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("official")}
+            className={`h-7 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 ${
+              activeTab === "official"
+                ? "bg-[#36aa80] text-[#123F36] font-bold shadow-[inset_1px_1px_3px_rgba(0,0,0,0.6)]"
+                : "text-[#55cca0] hover:bg-[#123830]"
+            }`}
+          >
+            <UserCheck className="h-3 w-3" />
+            <span className="hidden sm:inline">Official</span>
+            <span className="text-[10px] opacity-80">({official.length})</span>
+          </button>
+
+          <div className="h-3.5 w-px bg-[#2A6B5C]/60" />
+
+          {/* Quick Scan Button */}
+          <Button
+            size="sm"
+            variant="default"
+            onClick={handleRunFullScan}
+            disabled={isScanning}
+            className="h-7 px-3 rounded-full text-[11px] font-mono font-bold"
+          >
+            {isScanning ? (
+              <RotateCcw className="h-3 w-3 animate-spin" />
+            ) : (
+              <Play className="h-3 w-3 fill-current" />
+            )}
+            <span className="hidden md:inline ml-1">{isScanning ? "Scanning..." : "Scan"}</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          INSPECTION DRAWER MODAL (Spatial UI Viewport)
          ───────────────────────────────────────────────────────────── */}
       {selectedCandidate && (
         <CandidateInspectorModal
@@ -712,7 +786,7 @@ export function Dashboard() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          TAKEDOWN NOTICE GENERATOR MODAL
+          TAKEDOWN NOTICE GENERATOR MODAL (Spatial Viewport)
          ───────────────────────────────────────────────────────────── */}
       {takedownModalCandidate && (
         <TakedownNoticeModal
@@ -726,7 +800,7 @@ export function Dashboard() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PIPELINE NODE STEP INDICATOR
+// PIPELINE NODE STEP INDICATOR (Neomorphic Embossed/Debossed Nodes)
 // ─────────────────────────────────────────────────────────────────────────────
 function PipelineNode({
   step,
@@ -738,57 +812,58 @@ function PipelineNode({
   current: number;
   title: string;
   desc: string;
+  key?: string | number;
 }) {
   const isDone = current > step || current === 8;
   const isCurrent = current === step;
 
   return (
     <div
-      className={`rounded-lg border p-2.5 transition-all text-left ${
+      className={`rounded-lg p-2.5 transition-all text-left ${
         isCurrent
-          ? "border-primary bg-primary/10 shadow-sm"
+          ? "bg-[#184e42] border border-[#C49A45] shadow-[3px_3px_8px_rgba(5,18,15,0.8),-2px_-2px_6px_rgba(42,107,92,0.35)]"
           : isDone
-          ? "border-emerald-500/30 bg-emerald-500/5"
-          : "border-border/50 bg-background/50 opacity-60"
+            ? "bg-[#143e34] border border-[#36aa80]/50 shadow-[inset_1px_1px_2px_rgba(5,18,15,0.6)]"
+            : "bg-[#123830] border border-[#2A6B5C]/30 opacity-60 shadow-[inset_1px_1px_2px_rgba(5,18,15,0.7)]"
       }`}
     >
       <div className="flex items-center justify-between">
         <span
           className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold font-mono ${
             isCurrent
-              ? "bg-primary text-primary-foreground"
+              ? "bg-[#C49A45] text-[#123F36]"
               : isDone
-              ? "bg-emerald-500 text-white"
-              : "bg-muted text-muted-foreground"
+                ? "bg-[#36aa80] text-[#123F36]"
+                : "bg-[#1a4a3f] text-muted-foreground"
           }`}
         >
           {isDone ? "✓" : step}
         </span>
         {isCurrent && (
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#C49A45] opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C49A45]" />
           </span>
         )}
       </div>
-      <div className="mt-1.5 font-mono text-[11px] font-bold text-foreground truncate">
-        {title}
-      </div>
+      <div className="mt-1 font-mono text-[11px] font-bold text-[#E8DCC4] truncate">{title}</div>
       <div className="text-[10px] text-muted-foreground truncate">{desc}</div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CANDIDATE CARD COMPONENT
+// CANDIDATE CARD COMPONENT (Spatial UI Theme for Threats)
 // ─────────────────────────────────────────────────────────────────────────────
 function CandidateCard({
   candidate,
+  index,
   officialLogo,
   onInspect,
   onTakedown,
 }: {
   candidate: ScanCandidate;
+  index: number;
   officialLogo: string | null;
   onInspect: () => void;
   onTakedown: () => void;
@@ -801,67 +876,78 @@ function CandidateCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 transition-all hover:shadow-md flex flex-col justify-between ${
+      className={`spatial-threat-card rounded-xl p-4 flex flex-col justify-between ${
         isOfficial
-          ? "border-emerald-500/30 bg-surface/40"
+          ? "border-t-[#36aa80] border-[#2A6B5C]/40"
           : isScam
-          ? "border-rose-500/40 bg-rose-500/[0.03]"
-          : "border-amber-500/40 bg-amber-500/[0.03]"
+            ? "border-t-[#e25252] border-[#2A6B5C]/50"
+            : "border-t-[#C49A45] border-[#2A6B5C]/50"
       }`}
     >
       <div>
+        {/* Spatial HUD Coordinate Strip */}
+        <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground/80 mb-2 border-b border-[#2A6B5C]/30 pb-1">
+          <span className="flex items-center gap-1">
+            <Crosshair className="h-2.5 w-2.5 text-[#C49A45]" />
+            THREAT-VEC // 0{index + 1}
+          </span>
+          <span className="text-[#C49A45] font-semibold">
+            {candidate.platform_or_store.toUpperCase()}
+          </span>
+        </div>
+
         {/* Header Strip */}
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 mt-1">
           <div className="flex items-center gap-2.5">
-            {/* Candidate avatar */}
-            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+            {/* Candidate avatar - Tactile Recessed */}
+            <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-lg border border-[#2A6B5C]/50 bg-[#123830] shadow-[inset_1px_1px_3px_rgba(5,18,15,0.8)]">
               {officialLogo ? (
                 <img src={officialLogo} alt="" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-muted-foreground">
+                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#C49A45]">
                   {candidate.handle_or_title[0]?.toUpperCase()}
                 </div>
               )}
             </div>
             <div>
-              <div className="text-sm font-semibold text-foreground truncate max-w-[170px]">
+              <div className="text-xs font-bold text-[#E8DCC4] truncate max-w-[160px]">
                 {candidate.display_name}
               </div>
-              <div className="text-xs font-mono text-muted-foreground truncate max-w-[170px]">
+              <div className="text-[11px] font-mono text-muted-foreground truncate max-w-[160px]">
                 {candidate.package_id ? candidate.handle_or_title : `@${candidate.handle_or_title}`}
               </div>
             </div>
           </div>
 
-          {/* Risk Score Pill */}
+          {/* Spatial Risk Score Pill */}
           <div
-            className={`flex flex-col items-end rounded-lg px-2 py-1 font-mono text-right ${
+            className={`flex flex-col items-end rounded-md px-2 py-0.5 font-mono text-right shadow-[inset_1px_1px_2px_rgba(5,18,15,0.6)] border ${
               isOfficial
-                ? "bg-emerald-500/10 text-emerald-400"
+                ? "bg-[#143e34] border-[#36aa80]/50 text-[#55cca0]"
                 : isScam
-                ? "bg-rose-500/15 text-rose-400 font-bold"
-                : "bg-amber-500/15 text-amber-400 font-bold"
+                  ? "bg-[#251717] border-[#e25252]/60 text-[#ff7575] font-bold"
+                  : "bg-[#221e14] border-[#C49A45]/60 text-[#e0b45a] font-bold"
             }`}
           >
             <span className="text-xs font-bold leading-none">{candidate.risk_score}</span>
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-tight">
+            <span className="text-[8px] uppercase tracking-wider opacity-80 leading-tight">
               {candidate.severity}
             </span>
           </div>
         </div>
 
         {/* Classification Badge & Platform */}
-        <div className="mt-3 flex items-center justify-between text-xs">
-          <span className="font-mono text-[11px] text-muted-foreground">
+        <div className="mt-2.5 flex items-center justify-between text-xs">
+          <span className="font-mono text-[10px] text-muted-foreground">
             {candidate.platform_or_store}
           </span>
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+            className={`rounded-full px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider shadow-[inset_1px_1px_2px_rgba(0,0,0,0.4)] ${
               isOfficial
-                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                ? "bg-[#143e34] text-[#55cca0] border border-[#36aa80]/50"
                 : isScam
-                ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-                : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  ? "bg-[#251717] text-[#ff7575] border border-[#e25252]/60"
+                  : "bg-[#221e14] text-[#e0b45a] border border-[#C49A45]/60"
             }`}
           >
             {candidate.classification}
@@ -869,44 +955,44 @@ function CandidateCard({
         </div>
 
         {/* Bio or Description snippet */}
-        <div className="mt-2.5 rounded bg-background/60 p-2 text-xs text-muted-foreground line-clamp-2">
-          {candidate.bio_or_description || "No bio provided."}
+        <div className="mt-2 rounded bg-[#123830] border border-[#2A6B5C]/30 p-2 text-[11px] text-[#b8ab94] line-clamp-2 shadow-[inset_1px_1px_3px_rgba(5,18,15,0.7)] font-mono">
+          {candidate.bio_or_description || "No bio telemetry detected."}
         </div>
 
         {/* Forensic Signal Tags */}
-        <div className="mt-3 flex flex-wrap gap-1">
-          <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground border border-border">
+        <div className="mt-2.5 flex flex-wrap gap-1">
+          <span className="rounded bg-[#123830] px-1.5 py-0.5 text-[9px] font-mono text-[#E8DCC4] border border-[#2A6B5C]/50">
             Logo: {candidate.logo_similarity}%
           </span>
           {candidate.signals["identity_similarity"] !== undefined && (
-            <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground border border-border">
+            <span className="rounded bg-[#123830] px-1.5 py-0.5 text-[9px] font-mono text-[#E8DCC4] border border-[#2A6B5C]/50">
               Name: {String(candidate.signals["identity_similarity"])}%
             </span>
           )}
           {candidate.verified && (
-            <span className="rounded bg-sky-500/10 text-sky-400 px-1.5 py-0.5 text-[10px] font-mono border border-sky-500/20">
+            <span className="rounded bg-[#153f36] text-[#55cca0] px-1.5 py-0.5 text-[9px] font-mono border border-[#36aa80]/40">
               Verified
             </span>
           )}
         </div>
       </div>
 
-      {/* Card Actions */}
-      <div className="mt-4 flex items-center gap-2 border-t border-border/60 pt-3">
+      {/* Card Actions - Dense Tactile Buttons */}
+      <div className="mt-3.5 flex items-center gap-2 border-t border-[#2A6B5C]/40 pt-2.5">
         <Button
           variant="outline"
           size="sm"
           onClick={onInspect}
-          className="flex-1 text-xs font-mono h-8"
+          className="flex-1 text-[11px] font-mono h-7"
         >
-          <Eye className="h-3 w-3 mr-1 text-primary" /> Inspect
+          <Eye className="h-3 w-3 mr-1 text-[#C49A45]" /> Inspect
         </Button>
         {!isOfficial && (
           <Button
-            variant="default"
+            variant="destructive"
             size="sm"
             onClick={onTakedown}
-            className="text-xs font-mono h-8 bg-rose-600 hover:bg-rose-500 text-white"
+            className="text-[11px] font-mono h-7 px-3"
           >
             <ShieldAlert className="h-3 w-3 mr-1" /> Takedown
           </Button>
@@ -917,7 +1003,7 @@ function CandidateCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INSPECTOR MODAL WITH DEEP SIGNAL BREAKDOWN
+// INSPECTOR MODAL WITH DEEP SIGNAL BREAKDOWN (Spatial Viewport)
 // ─────────────────────────────────────────────────────────────────────────────
 function CandidateInspectorModal({
   candidate,
@@ -931,84 +1017,84 @@ function CandidateInspectorModal({
   onTakedown: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-border pb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d2722]/85 p-4">
+      <div className="spatial-viewport relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl p-5 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(232,220,196,0.2)] border border-[#2A6B5C]/60">
+        <div className="flex items-start justify-between border-b border-[#2A6B5C]/40 pb-3.5">
           <div>
-            <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              Candidate Forensic Analysis
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#C49A45]">
+              ThreatLens Candidate Forensic Telemetry
             </div>
-            <h3 className="text-xl font-bold text-foreground">{candidate.display_name}</h3>
-            <div className="font-mono text-xs text-primary">
+            <h3 className="text-lg font-bold text-[#E8DCC4]">{candidate.display_name}</h3>
+            <div className="font-mono text-xs text-[#C49A45]">
               {candidate.package_id ? candidate.handle_or_title : `@${candidate.handle_or_title}`}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-muted-foreground hover:bg-surface hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-[#123830] hover:text-white transition-colors"
           >
-            <XCircle className="h-5 w-5" />
+            <XCircle className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-5 space-y-5">
-          {/* Homoglyph / Typo comparison */}
-          <div className="rounded-lg border border-border/80 bg-surface/40 p-4 space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+        <div className="mt-4 space-y-4">
+          {/* Homoglyph / Typo comparison - Spatial Plane */}
+          <div className="rounded-lg border border-[#2A6B5C]/40 bg-[#123830] p-3.5 space-y-1.5 shadow-[inset_2px_2px_5px_rgba(5,18,15,0.7)]">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#C49A45] font-mono">
               Homoglyph & Typo Character Analysis
             </div>
-            <div className="flex items-center gap-3 text-sm font-mono">
+            <div className="flex items-center gap-3 text-xs font-mono">
               <span className="text-muted-foreground">Target:</span>
-              <span className="rounded bg-background px-2 py-1 font-bold">
+              <span className="rounded bg-[#16443b] px-2 py-0.5 font-bold text-[#E8DCC4] border border-[#2A6B5C]/60">
                 <HandleDiff handle={candidate.handle_or_title} />
               </span>
               <span className="text-muted-foreground">vs Baseline:</span>
-              <span className="rounded bg-emerald-500/10 px-2 py-1 text-emerald-400">
+              <span className="rounded bg-[#143e34] border border-[#36aa80]/50 px-2 py-0.5 text-[#55cca0] font-bold">
                 {brand.name.toLowerCase()}
               </span>
             </div>
           </div>
 
           {/* Signals Breakdown */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-lg border border-border bg-background/60 p-3">
-              <div className="text-[10px] font-mono uppercase text-muted-foreground">Logo Match</div>
-              <div className="mt-1 text-xl font-bold font-mono text-foreground">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <div className="rounded-lg border border-[#2A6B5C]/40 bg-[#123830] p-2.5 shadow-[inset_1px_1px_3px_rgba(5,18,15,0.6)]">
+              <div className="text-[9px] font-mono uppercase text-muted-foreground">Logo Match</div>
+              <div className="mt-1 text-lg font-bold font-mono text-[#E8DCC4]">
                 {candidate.logo_similarity}%
               </div>
             </div>
-            <div className="rounded-lg border border-border bg-background/60 p-3">
-              <div className="text-[10px] font-mono uppercase text-muted-foreground">Risk Score</div>
-              <div className="mt-1 text-xl font-bold font-mono text-rose-400">
+            <div className="rounded-lg border border-[#e25252]/40 bg-[#1e1c1c] p-2.5 shadow-[inset_1px_1px_3px_rgba(5,18,15,0.6)]">
+              <div className="text-[9px] font-mono uppercase text-muted-foreground">Risk Score</div>
+              <div className="mt-1 text-lg font-bold font-mono text-[#ff7575]">
                 {candidate.risk_score} / 100
               </div>
             </div>
-            <div className="rounded-lg border border-border bg-background/60 p-3">
-              <div className="text-[10px] font-mono uppercase text-muted-foreground">Platform</div>
-              <div className="mt-1 text-sm font-semibold text-foreground">
+            <div className="rounded-lg border border-[#2A6B5C]/40 bg-[#123830] p-2.5 shadow-[inset_1px_1px_3px_rgba(5,18,15,0.6)]">
+              <div className="text-[9px] font-mono uppercase text-muted-foreground">Platform</div>
+              <div className="mt-1 text-xs font-bold text-[#E8DCC4] truncate">
                 {candidate.platform_or_store}
               </div>
             </div>
-            <div className="rounded-lg border border-border bg-background/60 p-3">
-              <div className="text-[10px] font-mono uppercase text-muted-foreground">Status</div>
-              <div className="mt-1 text-xs font-bold text-foreground">
+            <div className="rounded-lg border border-[#2A6B5C]/40 bg-[#123830] p-2.5 shadow-[inset_1px_1px_3px_rgba(5,18,15,0.6)]">
+              <div className="text-[9px] font-mono uppercase text-muted-foreground">Status</div>
+              <div className="mt-1 text-xs font-bold text-[#C49A45] truncate">
                 {candidate.classification}
               </div>
             </div>
           </div>
 
           {/* Rationale and Flagged Reasons */}
-          <div className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#C49A45] font-mono">
               Explainable Risk Reasons
             </div>
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {candidate.reasons.map((r, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 rounded bg-surface/50 p-2 text-xs text-foreground"
+                  className="flex items-start gap-2 rounded bg-[#123830] p-2 text-xs text-[#E8DCC4] border border-[#2A6B5C]/30 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5)] font-mono"
                 >
-                  <span className="text-rose-400">•</span>
+                  <span className="text-[#ff7575]">•</span>
                   <span>{r}</span>
                 </li>
               ))}
@@ -1017,26 +1103,27 @@ function CandidateInspectorModal({
 
           {/* Raw Bio Content */}
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
               Profile Bio / App Description
             </div>
-            <div className="rounded bg-background p-3 font-mono text-xs text-muted-foreground">
+            <div className="rounded bg-[#123830] border border-[#2A6B5C]/40 p-2.5 font-mono text-xs text-[#b8ab94] shadow-[inset_1px_1px_3px_rgba(5,18,15,0.7)]">
               {candidate.bio_or_description || "No bio text provided."}
             </div>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+        <div className="mt-5 flex justify-end gap-2 border-t border-[#2A6B5C]/40 pt-3.5">
           <Button variant="outline" size="sm" onClick={onClose} className="text-xs font-mono">
             Close
           </Button>
           {candidate.classification !== "Legitimate / official" && (
             <Button
               size="sm"
+              variant="destructive"
               onClick={onTakedown}
-              className="text-xs font-mono bg-rose-600 hover:bg-rose-500 text-white"
+              className="text-xs font-mono font-bold"
             >
-              <ShieldAlert className="h-3.5 w-3.5 mr-1" /> Prepare Takedown Notice
+              <ShieldAlert className="h-3 w-3 mr-1" /> Prepare Takedown Notice
             </Button>
           )}
         </div>
@@ -1046,7 +1133,7 @@ function CandidateInspectorModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAKEDOWN NOTICE GENERATOR MODAL
+// TAKEDOWN NOTICE GENERATOR MODAL (Spatial Viewport)
 // ─────────────────────────────────────────────────────────────────────────────
 function TakedownNoticeModal({
   candidate,
@@ -1062,12 +1149,14 @@ function TakedownNoticeModal({
 
 To: Abuse and Legal Compliance Desk (${candidate.platform_or_store})
 Date: ${new Date().toUTCString()}
-Ref: SentinelX-Takedown-${Date.now().toString(36).toUpperCase()}
+Ref: ThreatLens-Takedown-${Date.now().toString(36).toUpperCase()}
 
 1. COMPLAINANT IDENTIFICATION
 Brand Name: ${brand.name}
 Official Baseline Domains: ${brand.domains.join(", ")}
-Official Channels: ${Object.entries(brand.handles).map(([k, v]) => `${k}: @${v}`).join(", ")}
+Official Channels: ${Object.entries(brand.handles)
+      .map(([k, v]) => `${k}: @${v}`)
+      .join(", ")}
 
 2. INFRINGING ASSET DETAILS
 Platform: ${candidate.platform_or_store}
@@ -1084,7 +1173,7 @@ ${candidate.reasons.map((r) => `  * ${r}`).join("\n")}
 4. REMEDY REQUESTED
 We request the immediate suspension and removal of this infringing profile/application pursuant to trademark violation and consumer fraud prevention standards.
 
-Generated via SentinelX Threat Intelligence Platform.`;
+Generated via ThreatLens Threat Intelligence Platform.`;
   }, [candidate, brand]);
 
   const copyNotice = () => {
@@ -1093,39 +1182,44 @@ Generated via SentinelX Threat Intelligence Platform.`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-border pb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d2722]/85 p-4">
+      <div className="spatial-viewport relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl p-5 shadow-[0_25px_60px_-10px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(232,220,196,0.2)] border border-[#2A6B5C]/60">
+        <div className="flex items-start justify-between border-b border-[#2A6B5C]/40 pb-3.5">
           <div>
-            <div className="text-xs font-mono uppercase tracking-wider text-rose-400">
-              Legal Abuse Package
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#ff7575]">
+              ThreatLens Legal Abuse Package
             </div>
-            <h3 className="text-xl font-bold text-foreground">
+            <h3 className="text-lg font-bold text-[#E8DCC4]">
               Takedown Notice: {candidate.display_name}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-muted-foreground hover:bg-surface hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-[#123830] hover:text-white transition-colors"
           >
-            <XCircle className="h-5 w-5" />
+            <XCircle className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-4">
-          <Label className="text-xs font-mono text-muted-foreground">Pre-Formatted Legal Notice</Label>
+        <div className="mt-3.5">
+          <Label className="text-xs font-mono text-[#C49A45]">Pre-Formatted Legal Notice</Label>
           <textarea
             readOnly
             value={noticeText}
-            className="mt-1.5 h-64 w-full rounded-md border border-border bg-background p-3 font-mono text-xs text-foreground focus:outline-none"
+            className="mt-1.5 h-64 w-full rounded-md border border-[#2A6B5C]/50 bg-[#123830] p-3 font-mono text-xs text-[#E8DCC4] focus:outline-none shadow-[inset_2px_2px_5px_rgba(5,18,15,0.8)]"
           />
         </div>
 
-        <div className="mt-5 flex justify-end gap-2 border-t border-border pt-4">
+        <div className="mt-4 flex justify-end gap-2 border-t border-[#2A6B5C]/40 pt-3.5">
           <Button variant="outline" size="sm" onClick={onClose} className="text-xs font-mono">
             Close
           </Button>
-          <Button size="sm" onClick={copyNotice} className="text-xs font-mono">
+          <Button
+            size="sm"
+            variant="default"
+            onClick={copyNotice}
+            className="text-xs font-mono font-bold"
+          >
             Copy to Clipboard
           </Button>
         </div>

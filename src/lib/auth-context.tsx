@@ -29,8 +29,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-const CURRENT_SESSION_KEY = "sentinelx_active_user_session";
-const REGISTERED_ACCOUNTS_KEY = "sentinelx_registered_accounts";
+const CURRENT_SESSION_KEY = "threatlens_active_user_session";
+const REGISTERED_ACCOUNTS_KEY = "threatlens_registered_accounts";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const signIn = async (
     emailInput: string,
-    passwordInput: string
+    passwordInput: string,
   ): Promise<{ success: boolean; error?: string }> => {
     const email = emailInput.trim().toLowerCase();
     const password = passwordInput.trim();
@@ -243,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const signUp = async (
     emailInput: string,
-    passwordInput: string
+    passwordInput: string,
   ): Promise<{ success: boolean; error?: string }> => {
     const email = emailInput.trim().toLowerCase();
     const password = passwordInput.trim();

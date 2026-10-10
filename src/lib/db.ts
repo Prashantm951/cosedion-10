@@ -15,8 +15,8 @@ export type StoredScan = {
   candidates: ScanCandidate[];
 };
 
-const LOCAL_STORAGE_KEY_BRAND = "sentinelx_active_brand";
-const LOCAL_STORAGE_KEY_SCANS = "sentinelx_scans_history";
+const LOCAL_STORAGE_KEY_BRAND = "threatlens_active_brand";
+const LOCAL_STORAGE_KEY_SCANS = "threatlens_scans_history";
 
 /**
  * Checks connection status to Supabase PostgreSQL database
@@ -55,10 +55,14 @@ export async function checkDatabaseConnection(): Promise<{
  * Saves official brand baseline to PostgreSQL database and local cache
  */
 export async function saveBrandBaseline(
-  brand: Omit<Brand, "id" | "user_id" | "created_at" | "team" | "alert_critical_email" | "alert_email">
+  brand: Omit<
+    Brand,
+    "id" | "user_id" | "created_at" | "team" | "alert_critical_email" | "alert_email"
+  >,
 ): Promise<Brand> {
   const brandRecord: Brand = {
-    id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `b-${Date.now()}`,
+    id:
+      typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `b-${Date.now()}`,
     user_id: "authenticated-user",
     name: brand.name,
     keywords: brand.keywords ?? [],
@@ -96,11 +100,7 @@ export async function saveBrandBaseline(
       ...(userId ? { user_id: userId } : {}),
     };
 
-    const { data, error } = await supabase
-      .from("brands")
-      .insert([payload])
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("brands").insert([payload]).select().maybeSingle();
 
     if (!error && data) {
       brandRecord.id = data.id;
@@ -174,13 +174,18 @@ export async function loadBrandBaseline(): Promise<Brand | null> {
  */
 export async function saveScanResults(
   brand: Brand,
-  candidates: ScanCandidate[]
+  candidates: ScanCandidate[],
 ): Promise<StoredScan> {
-  const scanId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `s-${Date.now()}`;
+  const scanId =
+    typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `s-${Date.now()}`;
   const now = new Date().toISOString();
 
   const legit = candidates.filter((c) => c.classification === "Legitimate / official");
-  const impersonations = candidates.filter((c) => c.classification === "Potential impersonation" || c.classification === "High-risk impersonation");
+  const impersonations = candidates.filter(
+    (c) =>
+      c.classification === "Potential impersonation" ||
+      c.classification === "High-risk impersonation",
+  );
   const scams = candidates.filter((c) => c.classification === "Likely scam");
   const avgScore = candidates.length
     ? Math.round(candidates.reduce((acc, c) => acc + c.risk_score, 0) / candidates.length)
