@@ -91,6 +91,99 @@ export type Database = {
         };
         Relationships: [];
       };
+      scan_candidates: {
+        Row: {
+          account_age_days: number | null;
+          bio_or_description: string | null;
+          brand_id: string;
+          candidate_kind: string;
+          classification: string | null;
+          created_at: string;
+          display_name: string | null;
+          evidence: Json;
+          followers: number;
+          handle_or_title: string;
+          id: string;
+          logo_similarity: number;
+          package_id: string | null;
+          permissions: string[];
+          platform_or_store: string;
+          processing_status: string;
+          publisher: string | null;
+          risk_score: number | null;
+          scan_id: string;
+          severity: string | null;
+          source_type: string;
+          user_id: string;
+          verified: boolean;
+        };
+        Insert: {
+          account_age_days?: number | null;
+          bio_or_description?: string | null;
+          brand_id: string;
+          candidate_kind: string;
+          classification?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          evidence?: Json;
+          followers?: number;
+          handle_or_title: string;
+          id?: string;
+          logo_similarity?: number;
+          package_id?: string | null;
+          permissions?: string[];
+          platform_or_store: string;
+          processing_status?: string;
+          publisher?: string | null;
+          risk_score?: number | null;
+          scan_id: string;
+          severity?: string | null;
+          source_type?: string;
+          user_id?: string;
+          verified?: boolean;
+        };
+        Update: {
+          account_age_days?: number | null;
+          bio_or_description?: string | null;
+          brand_id?: string;
+          candidate_kind?: string;
+          classification?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          evidence?: Json;
+          followers?: number;
+          handle_or_title?: string;
+          id?: string;
+          logo_similarity?: number;
+          package_id?: string | null;
+          permissions?: string[];
+          platform_or_store?: string;
+          processing_status?: string;
+          publisher?: string | null;
+          risk_score?: number | null;
+          scan_id?: string;
+          severity?: string | null;
+          source_type?: string;
+          user_id?: string;
+          verified?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "scan_candidates_brand_id_fkey";
+            columns: ["brand_id"];
+            isOneToOne: false;
+            referencedRelation: "brands";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scan_candidates_scan_id_fkey";
+            columns: ["scan_id"];
+            isOneToOne: false;
+            referencedRelation: "scans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       scans: {
         Row: {
           brand_id: string;

@@ -9,18 +9,33 @@ export type Threat = Tables<"threats">;
 export type App = Tables<"suspicious_apps">;
 export type Report = Tables<"takedown_reports">;
 
+export async function ensureTestSession() {
+  const existing = await supabase.auth.getSession();
+  if (existing.data.session) return existing.data.session;
+
+  const { data, error } = await supabase.auth.signInAnonymously();
+  if (error) {
+    throw new Error(
+      "Anonymous test access is not enabled in Supabase. Enable anonymous sign-ins or add auth later.",
+    );
+  }
+  if (!data.session) throw new Error("Could not start anonymous test session.");
+  return data.session;
+}
+
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    ensureTestSession()
+      .then((s) => setSession(s))
+      .catch((e) => setError(e instanceof Error ? e : new Error("Test session failed")))
+      .finally(() => setLoading(false));
     return () => data.subscription.unsubscribe();
   }, []);
-  return { session, loading, user: session?.user ?? null };
+  return { session, loading, error, user: session?.user ?? null };
 }
 
 const BRAND_KEY = "sentinelx.brand";

@@ -55,7 +55,7 @@ async function resizeToDataUrl(file: File): Promise<string> {
 }
 
 function Onboarding() {
-  const { session, loading } = useSession();
+  const { session, loading, error } = useSession();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -70,8 +70,8 @@ function Onboarding() {
     phones: "",
   });
   useEffect(() => {
-    if (!loading && !session) navigate({ to: "/auth" });
-  }, [loading, session]);
+    if (!loading && error) toast.error(error.message);
+  }, [loading, error]);
 
   async function finish() {
     if (!f.name.trim()) {
@@ -92,7 +92,7 @@ function Onboarding() {
         app_publishers: splitList(f.publishers),
         domains: splitList(f.domains),
         phones: splitList(f.phones),
-        alert_email: session!.user.email,
+        alert_email: null,
       })
       .select()
       .single();

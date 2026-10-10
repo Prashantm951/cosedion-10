@@ -1,417 +1,457 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { motion } from "framer-motion";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Radar } from "lucide-react";
-import { useApps, useReports, useThreats } from "@/lib/data";
-import { useShell } from "@/components/sx/AppShell";
-import {
-  CountUp,
-  EmptyState,
-  PageHeader,
-  PlatformIcon,
-  SeverityBadge,
-  Skel,
-  Sparkline,
-  StatusChip,
-  fadeUp,
-} from "@/components/sx/primitives";
-import { ThreatGraph } from "@/components/sx/ThreatGraph";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { ArrowDown, Search, Upload, Wand2 } from "lucide-react";
+import type { Brand } from "@/lib/data";
+import { generateCandidates, type ScanCandidate } from "@/lib/monitoring";
 import { Button } from "@/components/ui/button";
-import { PLATFORMS } from "@/lib/monitoring";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — SentinelX" },
-      { name: "description", content: "Brand threat overview." },
-      { property: "og:title", content: "Dashboard — SentinelX" },
-      { property: "og:description", content: "Brand threat overview." },
+      { title: "Prototype tester - SentinelX" },
+      {
+        name: "description",
+        content: "Basic frontend for testing brand input, lookalike generation, and search.",
+      },
     ],
   }),
   component: Dashboard,
 });
 
-function ChartTip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: { value: number; name: string }[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
+type FormState = {
+  brandName: string;
+  aliases: string;
+  logoUrl: string;
+  instagram: string;
+  x: string;
+  facebook: string;
+  telegram: string;
+  youtube: string;
+  domains: string;
+  appIds: string;
+  publishers: string;
+};
+
+const initialForm: FormState = {
+  brandName: "",
+  aliases: "",
+  logoUrl: "",
+  instagram: "",
+  x: "",
+  facebook: "",
+  telegram: "",
+  youtube: "",
+  domains: "",
+  appIds: "",
+  publishers: "",
+};
+
+function Dashboard() {
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [candidates, setCandidates] = useState<ScanCandidate[]>([]);
+  const [query, setQuery] = useState("");
+  const [kind, setKind] = useState("all");
+
+  const brand = useMemo(() => formToBrand(form), [form]);
+  const official = candidates.filter((c) => c.classification === "Legitimate / official");
+  const lookalikes = candidates.filter((c) => c.candidate_kind === "lookalike");
+  const scams = candidates.filter((c) => c.candidate_kind === "scam");
+  const findings = candidates.filter(
+    (c) =>
+      c.classification !== "Legitimate / official" &&
+      c.classification !== "Legitimate / benign",
+  );
+  const filtered = candidates.filter((candidate) => {
+    const haystack = [
+      candidate.platform_or_store,
+      candidate.handle_or_title,
+      candidate.display_name,
+      candidate.bio_or_description,
+      candidate.classification,
+      candidate.reasons.join(" "),
+    ]
+      .join(" ")
+      .toLowerCase();
+    const matchesQuery = !query.trim() || haystack.includes(query.toLowerCase());
+    const matchesKind = kind === "all" || candidate.candidate_kind === kind;
+    return matchesQuery && matchesKind;
+  });
+
+  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function uploadLogo(file?: File) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => update("logoUrl", String(reader.result ?? ""));
+    reader.readAsDataURL(file);
+  }
+
+  function runGeneration() {
+    setCandidates(generateCandidates(brand));
+  }
+
   return (
-    <div className="glass rounded-lg px-3 py-2 text-xs">
-      <div className="text-muted-foreground">{label ?? payload[0].name}</div>
-      <div className="font-mono text-sm font-bold">{payload[0].value}</div>
+    <div className="space-y-5">
+      <section className="rounded-lg border border-border bg-surface p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Prototype mode</p>
+            <h1 className="mt-1 text-2xl font-semibold">Brand input and fake-candidate tester</h1>
+            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+              Auth, Gmail, database save, and real crawling are removed for now. Use this screen to
+              check the core logic: enter brand details, generate fake lookalike usernames/apps, and
+              search/filter the generated results.
+            </p>
+          </div>
+          <Button onClick={runGeneration}>
+            <Wand2 className="h-4 w-4" />
+            Generate fake candidates
+          </Button>
+        </div>
+      </section>
+
+      <Pipeline
+        hasBrand={Boolean(form.brandName.trim())}
+        generated={candidates.length}
+        official={official.length}
+        lookalikes={lookalikes.length + scams.length}
+        findings={findings.length}
+      />
+
+      <section className="grid gap-5 lg:grid-cols-[380px_1fr]">
+        <div className="rounded-lg border border-border bg-surface p-5">
+          <h2 className="font-semibold">Brand details</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            This is the minimum input needed to test matching and lookalike generation.
+          </p>
+          <div className="mt-5 space-y-4">
+            <Field label="Brand name">
+              <Input value={form.brandName} onChange={(e) => update("brandName", e.target.value)} />
+            </Field>
+            <Field label="Aliases / keywords">
+              <Input value={form.aliases} onChange={(e) => update("aliases", e.target.value)} />
+            </Field>
+            <Field label="Official logo">
+              <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-border p-3">
+                {form.logoUrl ? (
+                  <img src={form.logoUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
+                ) : (
+                  <span className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                  </span>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {form.logoUrl ? "Replace logo" : "Upload logo"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => uploadLogo(e.target.files?.[0])}
+                />
+              </label>
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Instagram">
+                <Input value={form.instagram} onChange={(e) => update("instagram", e.target.value)} />
+              </Field>
+              <Field label="X">
+                <Input value={form.x} onChange={(e) => update("x", e.target.value)} />
+              </Field>
+              <Field label="Facebook">
+                <Input value={form.facebook} onChange={(e) => update("facebook", e.target.value)} />
+              </Field>
+              <Field label="Telegram">
+                <Input value={form.telegram} onChange={(e) => update("telegram", e.target.value)} />
+              </Field>
+              <Field label="YouTube">
+                <Input value={form.youtube} onChange={(e) => update("youtube", e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Official domains">
+              <Input value={form.domains} onChange={(e) => update("domains", e.target.value)} />
+            </Field>
+            <Field label="Official app IDs">
+              <Input value={form.appIds} onChange={(e) => update("appIds", e.target.value)} />
+            </Field>
+            <Field label="Approved app publishers">
+              <Input value={form.publishers} onChange={(e) => update("publishers", e.target.value)} />
+            </Field>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <section className="grid gap-3 sm:grid-cols-4">
+            <Metric label="Generated" value={candidates.length} />
+            <Metric label="Official excluded" value={official.length} />
+            <Metric label="Lookalikes/scams" value={lookalikes.length + scams.length} />
+            <Metric label="Findings" value={findings.length} />
+          </section>
+
+          <section className="rounded-lg border border-border bg-surface p-5">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[220px] flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search username, app name, reason..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <select
+                value={kind}
+                onChange={(e) => setKind(e.target.value)}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="all">All candidates</option>
+                <option value="official">Official</option>
+                <option value="lookalike">Lookalike</option>
+                <option value="scam">Scam</option>
+                <option value="benign">Benign</option>
+              </select>
+            </div>
+          </section>
+
+          <CandidateTable rows={filtered} logo={form.logoUrl} />
+        </div>
+      </section>
     </div>
   );
 }
 
-function Dashboard() {
-  const { brand, runScan } = useShell();
-  const threats = useThreats(brand?.id);
-  const apps = useApps(brand?.id);
-  const reports = useReports(brand?.id);
-  const navigate = useNavigate();
-  const t = threats.data ?? [];
+function formToBrand(form: FormState): Brand {
+  return {
+    id: "local-brand",
+    user_id: "local-user",
+    name: form.brandName.trim() || "Demo Brand",
+    keywords: [form.brandName, ...splitList(form.aliases)].filter(Boolean),
+    logo_url: form.logoUrl || null,
+    handles: {
+      Instagram: cleanHandle(form.instagram),
+      X: cleanHandle(form.x),
+      Facebook: cleanHandle(form.facebook),
+      Telegram: cleanHandle(form.telegram),
+      YouTube: cleanHandle(form.youtube),
+    },
+    app_ids: splitList(form.appIds),
+    app_publishers: splitList(form.publishers),
+    domains: splitList(form.domains),
+    phones: [],
+    alert_critical_email: false,
+    alert_email: null,
+    team: [],
+    created_at: new Date().toISOString(),
+  };
+}
 
-  const stats = useMemo(() => {
-    const day = (d: string) => Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-    const series = Array.from({ length: 14 }, (_, i) => {
-      const d = 13 - i;
-      return {
-        day: new Date(Date.now() - d * 86400000).toLocaleDateString("en", {
-          month: "short",
-          day: "numeric",
-        }),
-        count: t.filter((x) => day(x.detected_at) === d).length,
-        critical: t.filter((x) => day(x.detected_at) === d && x.severity === "critical").length,
-      };
-    });
-    const thisWeek = t.filter((x) => day(x.detected_at) < 7).length,
-      lastWeek = t.filter((x) => day(x.detected_at) >= 7 && day(x.detected_at) < 14).length;
-    const delta = lastWeek ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 100;
-    return {
-      series,
-      delta,
-      byPlatform: PLATFORMS.map((p) => ({
-        name: p,
-        value: t.filter((x) => x.platform === p).length,
-      })),
-      bySev: ["critical", "high", "medium", "low"].map((s) => ({
-        name: s,
-        value: t.filter((x) => x.severity === s).length,
-      })),
-    };
-  }, [t]);
+function splitList(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
-  if (threats.isLoading)
-    return (
-      <div className="grid gap-4 md:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skel key={i} className="h-36" />
-        ))}
-      </div>
-    );
-  if (!t.length)
-    return (
-      <EmptyState
-        title="No threats yet"
-        body="Run your first scan to sweep 5 social platforms and app stores for impostors."
-        action={
-          <Button onClick={runScan}>
-            <Radar />
-            Run first scan
-          </Button>
-        }
-      />
-    );
+function cleanHandle(value: string) {
+  return value.trim().replace(/^@/, "");
+}
 
-  const crit = t.filter((x) => x.severity === "critical");
-  const spark = stats.series.map((s) => s.count);
-  const kpis = [
-    { label: "Total threats", value: t.length, color: "var(--primary)", data: spark },
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-2 font-mono text-3xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function Pipeline({
+  hasBrand,
+  generated,
+  official,
+  lookalikes,
+  findings,
+}: {
+  hasBrand: boolean;
+  generated: number;
+  official: number;
+  lookalikes: number;
+  findings: number;
+}) {
+  const steps = [
     {
-      label: "Critical",
-      value: crit.length,
-      color: "var(--critical)",
-      data: stats.series.map((s) => s.critical),
+      title: "1. User input",
+      detail: hasBrand ? "Brand details entered" : "Enter brand details",
+      state: hasBrand ? "done" : "todo",
     },
     {
-      label: "Impersonating accounts",
-      value: t.filter((x) => x.type === "Impersonation").length,
-      color: "var(--violet)",
-      data: spark.map((v, i) => (v + i) % 4),
+      title: "2. Official baseline",
+      detail: "Name, aliases, handles, logo, domains, app IDs, publishers",
+      state: hasBrand ? "done" : "todo",
     },
     {
-      label: "Suspicious apps",
-      value: apps.data?.length ?? 0,
-      color: "var(--high)",
-      data: [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, apps.data?.length ?? 0],
+      title: "3. Generate candidates",
+      detail: generated ? `${generated} simulated profiles/apps` : "Click generate",
+      state: generated ? "done" : "todo",
     },
     {
-      label: "Takedowns filed",
-      value:
-        (reports.data?.length ?? 0) + t.filter((x) => x.status === "Takedown Requested").length,
-      color: "var(--low)",
-      data: [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+      title: "4. Local staging",
+      detail: generated ? "Stored in page state for testing" : "Database save later",
+      state: generated ? "done" : "todo",
+    },
+    {
+      title: "5. Exclude official",
+      detail: official ? `${official} official matches excluded` : "Waiting for candidates",
+      state: official ? "done" : "todo",
+    },
+    {
+      title: "6. Analyze lookalikes",
+      detail: lookalikes ? `${lookalikes} lookalike/scam variants` : "Waiting for candidates",
+      state: lookalikes ? "done" : "todo",
+    },
+    {
+      title: "7. Score and classify",
+      detail: findings ? `${findings} findings scored 0-100` : "Waiting for analysis",
+      state: findings ? "done" : "todo",
     },
   ];
 
   return (
-    <div>
-      <PageHeader
-        title="Command center"
-        sub={`Simulated monitoring for ${brand?.name} across ${PLATFORMS.length} platforms + Play Store`}
-        actions={
-          <Button onClick={runScan}>
-            <Radar />
-            Run simulated scan
-          </Button>
-        }
-      />
-
-      <div className="mb-4 rounded-lg border border-primary/25 bg-primary/5 px-4 py-2 text-sm text-muted-foreground">
-        <span className="font-medium text-primary">Simulated scan data.</span> This MVP generates
-        brand-specific candidates; it does not crawl real social platforms or app stores.
-      </div>
-
-      <div className="panel mb-4 flex items-center overflow-hidden py-2.5">
-        <div className="label-caps z-10 shrink-0 border-r border-border bg-surface px-4 text-critical">
-          ● Live
-        </div>
-        <div className="relative flex-1 overflow-hidden">
-          <div className="flex w-max gap-8 animate-ticker whitespace-nowrap px-4 font-mono text-xs">
-            {[...t.slice(0, 12), ...t.slice(0, 12)].map((x, i) => (
-              <span key={i} className="flex items-center gap-2 text-muted-foreground">
-                <PlatformIcon platform={x.platform} className="h-3.5 w-3.5" />
-                <span className="text-foreground">@{x.handle}</span>
-                <span style={{ color: `var(--${x.severity})` }}>{x.risk_score}</span>
-                <span>
-                  {new Date(x.detected_at).toLocaleTimeString("en", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </span>
-            ))}
+    <section className="rounded-lg border border-border bg-surface p-5">
+      <h2 className="font-semibold">Core logic sequence</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        This mirrors your diagram. Database persistence and report generation are intentionally
+        marked as later work; this page tests the logic locally.
+      </p>
+      <div className="mt-4 grid gap-2 md:grid-cols-7">
+        {steps.map((step, index) => (
+          <div key={step.title} className="flex gap-2 md:block">
+            <div
+              className={`h-full rounded-lg border p-3 ${
+                step.state === "done"
+                  ? "border-primary/40 bg-primary/10"
+                  : "border-border bg-background"
+              }`}
+            >
+              <div className="text-xs font-semibold">{step.title}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{step.detail}</div>
+            </div>
+            {index < steps.length - 1 && (
+              <ArrowDown className="mt-3 h-4 w-4 shrink-0 text-muted-foreground md:mx-auto md:rotate-[-90deg]" />
+            )}
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        {kpis.map((k, i) => (
-          <motion.div
-            key={k.label}
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            custom={i}
-            className="panel panel-hover p-4"
-          >
-            <div className="label-caps">{k.label}</div>
-            <div className="mt-2 flex items-end justify-between">
-              <CountUp value={k.value} className="font-mono text-3xl font-bold" />
-              {i === 0 && (
-                <span
-                  className={`font-mono text-xs ${stats.delta >= 0 ? "text-critical" : "text-low"}`}
-                >
-                  {stats.delta >= 0 ? "▲" : "▼"}
-                  {Math.abs(stats.delta)}% wk
-                </span>
-              )}
-            </div>
-            <div className="mt-3">
-              <Sparkline data={k.data} color={k.color} id={String(i)} />
-            </div>
-          </motion.div>
         ))}
       </div>
+    </section>
+  );
+}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          custom={5}
-          className="panel p-5 lg:col-span-2"
-        >
-          <div className="label-caps mb-4">Threats over time · 14 days</div>
-          <div className="h-64">
-            <ResponsiveContainer>
-              <AreaChart data={stats.series}>
-                <defs>
-                  <linearGradient id="ar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="var(--primary)" stopOpacity={0.4} />
-                    <stop offset="1" stopColor="var(--primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="day"
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={24}
-                />
-                <Tooltip content={<ChartTip />} cursor={{ stroke: "var(--border)" }} />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="var(--primary)"
-                  strokeWidth={2}
-                  fill="url(#ar)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          custom={6}
-          className="panel p-5"
-        >
-          <div className="label-caps mb-2">Severity mix</div>
-          <div className="relative h-56">
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={stats.bySev}
-                  dataKey="value"
-                  innerRadius="62%"
-                  outerRadius="88%"
-                  paddingAngle={3}
-                  stroke="none"
-                >
-                  {stats.bySev.map((s) => (
-                    <Cell key={s.name} fill={`var(--${s.name})`} />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-mono text-3xl font-bold">{crit.length}</span>
-              <span className="label-caps">critical</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {stats.bySev.map((s) => (
-              <div key={s.name} className="flex items-center justify-between text-xs">
-                <SeverityBadge severity={s.name} />
-                <span className="font-mono">{s.value}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          custom={7}
-          className="panel p-5"
-        >
-          <div className="label-caps mb-4">By platform</div>
-          <div className="h-56">
-            <ResponsiveContainer>
-              <BarChart data={stats.byPlatform} layout="vertical">
-                <defs>
-                  <linearGradient id="br" x1="0" x2="1">
-                    <stop offset="0" stopColor="var(--violet)" />
-                    <stop offset="1" stopColor="var(--primary)" />
-                  </linearGradient>
-                </defs>
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={72}
-                />
-                <Tooltip content={<ChartTip />} cursor={{ fill: "var(--accent)" }} />
-                <Bar dataKey="value" fill="url(#br)" radius={[0, 6, 6, 0]} barSize={14} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          custom={8}
-          className="panel overflow-hidden lg:col-span-2"
-        >
-          <div className="flex items-center justify-between px-5 pt-5">
-            <div className="label-caps">Threat graph</div>
-            <Link to="/graph" className="text-xs text-primary hover:underline">
-              Open full graph →
-            </Link>
-          </div>
-          <ThreatGraph
-            height={260}
-            brandName={brand?.name ?? ""}
-            logo={brand?.logo_url}
-            nodes={t.map((x) => ({
-              id: x.id,
-              label: x.handle,
-              platform: x.platform,
-              risk: x.risk_score,
-              severity: x.severity,
-            }))}
-            onSelect={(id) => navigate({ to: "/threats/$id", params: { id } })}
-          />
-        </motion.div>
+function CandidateTable({ rows, logo }: { rows: ScanCandidate[]; logo: string }) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-lg border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
+        Click “Generate fake candidates” to create official exclusions, lookalike usernames, scam
+        profiles, and suspicious app samples.
       </div>
+    );
+  }
 
-      <motion.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="show"
-        custom={9}
-        className="panel mt-4 overflow-hidden"
-      >
-        <div className="flex items-center justify-between p-5">
-          <div className="label-caps">Latest critical threats</div>
-          <Link to="/threats" className="text-xs text-primary hover:underline">
-            View all →
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody>
-              {crit.slice(0, 6).map((x) => (
-                <tr
-                  key={x.id}
-                  className="row-accent cursor-pointer border-t border-border"
-                  onClick={() => navigate({ to: "/threats/$id", params: { id: x.id } })}
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <table className="w-full min-w-[1280px] text-left text-sm">
+        <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2">Logo</th>
+            <th className="px-3 py-2">Candidate</th>
+            <th className="px-3 py-2">Source</th>
+            <th className="px-3 py-2">Decision path</th>
+            <th className="px-3 py-2">Identity</th>
+            <th className="px-3 py-2">Logo</th>
+            <th className="px-3 py-2">Scam</th>
+            <th className="px-3 py-2">Account/publisher</th>
+            <th className="px-3 py-2">Classification</th>
+            <th className="px-3 py-2">Risk</th>
+            <th className="px-3 py-2">Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              key={`${row.platform_or_store}-${row.handle_or_title}`}
+              className="border-t border-border"
+            >
+              <td className="px-3 py-2">
+                {logo ? (
+                  <img src={logo} alt="" className="h-9 w-9 rounded-md object-cover" />
+                ) : (
+                  <span className="block h-9 w-9 rounded-md bg-muted" />
+                )}
+              </td>
+              <td className="px-3 py-2">
+                <div className="font-medium">{row.display_name}</div>
+                <div className="font-mono text-xs text-muted-foreground">
+                  {row.package_id ? row.handle_or_title : `@${row.handle_or_title}`}
+                </div>
+              </td>
+              <td className="px-3 py-2">
+                <div>{row.platform_or_store}</div>
+                <div className="font-mono text-xs text-muted-foreground">simulated</div>
+              </td>
+              <td className="px-3 py-2">
+                <span
+                  className={`rounded-md px-2 py-1 text-xs ${
+                    row.classification === "Legitimate / official"
+                      ? "bg-low/10 text-low"
+                      : "bg-critical/10 text-critical"
+                  }`}
                 >
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <PlatformIcon platform={x.platform} className="text-muted-foreground" />
-                      <span className="font-mono">@{x.handle}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-muted-foreground">{x.type}</td>
-                  <td className="px-3 py-3">
-                    <span className="font-mono font-bold text-critical">{x.risk_score}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <StatusChip status={x.status} />
-                  </td>
-                  <td className="px-5 py-3 text-right font-mono text-xs text-muted-foreground">
-                    {new Date(x.detected_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
+                  {row.classification === "Legitimate / official"
+                    ? "official excluded"
+                    : "scored finding"}
+                </span>
+              </td>
+              <SignalCell value={signalNumber(row, "identity_similarity")} suffix="%" />
+              <SignalCell value={signalNumber(row, "logo_similarity")} suffix="%" />
+              <SignalCell value={signalNumber(row, "scam_content")} suffix="/100" />
+              <SignalCell value={signalNumber(row, "account_or_publisher_risk")} suffix="/100" />
+              <td className="px-3 py-2">{row.classification}</td>
+              <td className="px-3 py-2">
+                <span className="font-mono text-lg font-semibold">{row.risk_score}</span>
+                <div className="text-xs capitalize text-muted-foreground">{row.severity}</div>
+              </td>
+              <td className="max-w-[360px] px-3 py-2 text-xs text-muted-foreground">
+                {row.reasons.slice(0, 3).join(" ")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
+  );
+}
+
+function signalNumber(candidate: ScanCandidate, key: string) {
+  const value = candidate.signals[key];
+  return typeof value === "number" ? value : candidate.classification === "Legitimate / official" ? 0 : null;
+}
+
+function SignalCell({ value, suffix }: { value: number | null; suffix: string }) {
+  return (
+    <td className="px-3 py-2 font-mono text-xs">
+      {value === null ? <span className="text-muted-foreground">-</span> : `${value}${suffix}`}
+    </td>
   );
 }

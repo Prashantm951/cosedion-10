@@ -68,12 +68,10 @@ function Landing() {
         <Logo />
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost">
-            <Link to="/auth">Sign in</Link>
+            <Link to="/dashboard">Open tester</Link>
           </Button>
           <Button asChild>
-            <Link to="/auth" search={{ mode: "signup" }}>
-              Start free
-            </Link>
+            <Link to="/dashboard">Open tester</Link>
           </Button>
         </div>
       </header>
@@ -102,9 +100,7 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Button asChild variant="hero" size="lg" className="h-12 px-7 text-base">
-              <Link to="/auth" search={{ mode: "signup" }}>
-                Protect my brand <ArrowRight />
-              </Link>
+              <Link to="/dashboard">Open tester <ArrowRight /></Link>
             </Button>
           </div>
           <div className="mt-10 flex items-end gap-3">
@@ -240,9 +236,7 @@ function Landing() {
             Your customers can't tell the difference. <span className="text-gradient">We can.</span>
           </h2>
           <Button asChild variant="hero" size="lg" className="mt-10 h-12 px-8 text-base">
-            <Link to="/auth" search={{ mode: "signup" }}>
-              Protect your brand <ArrowRight />
-            </Link>
+            <Link to="/dashboard">Open tester <ArrowRight /></Link>
           </Button>
         </motion.div>
       </section>
@@ -346,3 +340,4 @@ function RealVsFake() {
     </section>
   );
 }
+
