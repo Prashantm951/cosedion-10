@@ -66,12 +66,12 @@ function Landing() {
     <div className="min-h-screen cyber-bg">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <Logo />
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost">
-            <Link to="/dashboard">Open tester</Link>
+        <div className="flex items-center gap-3">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/auth">Sign In</Link>
           </Button>
-          <Button asChild>
-            <Link to="/dashboard">Open tester</Link>
+          <Button asChild size="sm">
+            <Link to="/dashboard">Command Center</Link>
           </Button>
         </div>
       </header>
@@ -82,25 +82,27 @@ function Landing() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-xs text-primary">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-xs text-primary font-mono">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inset-0 rounded-full bg-primary animate-ping-dot" />
               <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
             </span>
-            Simulated monitoring MVP
+            Automated Brand Defense · PostgreSQL Integrated
           </div>
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
             Find your brand's <span className="text-gradient">impostors</span> before your customers
             do.
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            SentinelX generates brand-specific simulated candidates, scores every one with
-            explainable signals, and drafts the takedown for you. It does not crawl real platforms
-            or stores.
+            SentinelX establishes your official brand baseline, generates potential look-alike candidates,
+            scores every candidate with explainable multi-signal analysis, and drafts ready-to-file takedowns.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Button asChild variant="hero" size="lg" className="h-12 px-7 text-base">
-              <Link to="/dashboard">Open tester <ArrowRight /></Link>
+              <Link to="/dashboard">Launch Command Center <ArrowRight /></Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="h-12 px-6 text-base font-mono">
+              <Link to="/auth">Sign In</Link>
             </Button>
           </div>
           <div className="mt-10 flex items-end gap-3">

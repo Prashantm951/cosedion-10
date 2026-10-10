@@ -1,14 +1,37 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { AppShell } from "@/components/sx/AppShell";
+import { useAuth } from "@/lib/auth-context";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  component: PrototypeLayout,
+  component: AuthenticatedLayout,
 });
 
-function PrototypeLayout() {
+function AuthenticatedLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate({ to: "/auth" });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground font-mono text-xs">
+        Verifying authenticated session...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <AppShell>
       <motion.div
